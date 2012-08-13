@@ -1,0 +1,45 @@
+<HTML>
+<HEAD>
+<TITLE>cns_type</TITLE>
+</HEAD>
+<BODY>
+
+<H1><CODE>cns_type</CODE></H1>
+
+Calls a <A HREF="package.html#method">MATLAB method</A> defined for a cell type.
+
+<H2>Syntax</H2>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+[out1, out2, ...] = cns_type(method, package, type, arg1, arg2, ...)
+[out1, out2, ...] = cns_type(method, m      , type, arg1, arg2, ...)
+[out1, out2, ...] = cns_type(method, m      , z   , arg1, arg2, ...)
+[out1, out2, ...] = cns_type(method, m      , -g  , arg1, arg2, ...)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>package</CODE></DT><DD>
+The package name.  If this variant is used, the method will receive an empty <A HREF="model.html#build">model structure</A>.
+</DD><P>
+<DT><CODE>m</CODE></DT><DD>
+A <A HREF="model.html#build">model structure</A>.
+</DD><P>
+<DT><CODE>type</CODE></DT><DD>
+The type name.  The method will be called with arguments <CODE>(m, arg1, arg2, ...)</CODE>.
+</DD><P>
+<DT><CODE>z</CODE></DT><DD>
+A layer number.  The method will be called with arguments <CODE>(m, z, arg1, arg2, ...)</CODE>.
+</DD><P>
+<DT><CODE>g</CODE></DT><DD>
+A group number.  The method will be called with arguments <CODE>(m, g, arg1, arg2, ...)</CODE>.  (Note the <CODE>"-"</CODE> sign in the <CODE>cns_type</CODE> call to distinguish <CODE>g</CODE> from a layer number.  It is removed before calling the method itself.)
+</DD><P>
+<DT><CODE>arg1, arg2, ...</CODE></DT><DD>
+Any additional inputs.  Depends on the particular method.
+</DD><P>
+<DT><CODE>out1, out2, ...</CODE></DT><DD>
+Any outputs.  Depends on the particular method.
+</DD>
+</DL>
+
+</BODY>
+</HTML>

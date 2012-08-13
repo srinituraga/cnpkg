@@ -1,0 +1,1300 @@
+<HTML>
+<HEAD>
+<TITLE>CNS: Packages</TITLE>
+<STYLE>
+BODY {
+    counter-reset: count1 2;
+}
+.tol1 {
+    counter-reset: item 2;
+}
+</STYLE>
+<LINK REL="stylesheet" TYPE="text/css" HREF="style.css"/>
+</HEAD>
+<BODY>
+
+<TABLE><TR>
+<TD><A HREF="http://cbcl.mit.edu/jmutch/cns"><IMG BORDER="1" SRC="figs/cns.png"></A></TD><TD VALIGN="top">
+&nbsp;<BIG><BIG><BIG><B>CNS: Cortical Network Simulator</B></BIG></BIG></BIG><BR>
+&nbsp;<BIG><BIG><BIG><B>Programming Guide</B></BIG></BIG></BIG>
+</TD></TR></TABLE>
+
+<H1>Developing Packages of Cell Types</H1>
+
+<HR><P>
+
+<B><I>For a brief overview of what a package is, click <A HREF="overview.html#working">here</A>.</I></B><P>
+
+Note that if you've obtained an existing package and you're only going to be building models that use those existing cell types, you might choose to skip this section for now.  At some point you will probably want to make modifications to those types; come back and read this section then.
+
+<HR>
+
+<UL>
+<A HREF="index.html">Programming Guide</A>
+<OL CLASS="tol1">
+<LI CLASS="tli">Developing Packages of Cell Types
+<OL CLASS="tol">
+<LI CLASS="tli"><A HREF="#dir">Files in a Package Directory</A>
+<LI CLASS="tli"><A HREF="#propfield">Defining Properties and Fields</A>
+<OL CLASS="tol">
+<LI CLASS="tli"><A HREF="#mdef">".m" File Format</A>
+<LI CLASS="tli"><A HREF="#prop">Type Properties</A>
+<OL CLASS="tol">
+<LI CLASS="tli"><A HREF="#dims">Defining Dimensionality</A>
+<LI CLASS="tli"><A HREF="#common">Mapping Dimensions to a Common Coordinate Space</A>
+</OL>
+<LI CLASS="tli"><A HREF="#field">Fields</A>
+<OL CLASS="tol">
+<LI CLASS="tli"><A HREF="#cfield">Parameter Fields (classes: mp, gp, lp)</A>
+<LI CLASS="tli"><A HREF="#pfield">Pointer Fields (classes: mz, gz, lz)</A>
+<LI CLASS="tli"><A HREF="#afield">N-D Array Fields (classes: ma, ga, la)</A>
+<LI CLASS="tli"><A HREF="#cvfield">Cell Fields (classes: cc, cv)</A>
+<LI CLASS="tli"><A HREF="#sfield">Synapse Fields (classes: sc, sv)</A>
+</OL>
+<LI CLASS="tli"><A HREF="#const">Compile-Time Constants</A>
+<LI CLASS="tli"><A HREF="#method">Additional MATLAB Methods</A>
+</OL>
+<LI CLASS="tli"><A HREF="#kernel">Writing Kernels</A>
+<OL CLASS="tol">
+<LI CLASS="tli"><A HREF="#compile">Kernel Files and Compilation</A>
+<LI CLASS="tli"><A HREF="#cuse">C++ Usage in Kernels</A>
+<LI CLASS="tli"><A HREF="#macros">CNS Macros</A>
+<OL CLASS="tol">
+<LI CLASS="tli"><A HREF="#genmac">General</A>
+<LI CLASS="tli"><A HREF="#gridmac">Connectivity: Regular Grid</A>
+<LI CLASS="tli"><A HREF="#expmac">Connectivity: Explicit Synapses</A>
+<LI CLASS="tli"><A HREF="#cmac">Parameter Fields</A>
+<LI CLASS="tli"><A HREF="#cvmac">Cell Fields</A>
+<LI CLASS="tli"><A HREF="#synmac">Synapse Fields</A>
+<LI CLASS="tli"><A HREF="#amac">N-D Array Fields</A>
+<LI CLASS="tli"><A HREF="#constmac">Compile-Time Constants</A>
+<LI CLASS="tli"><A HREF="#cvopt">Optimization: Public Cell Fields</A>
+<LI CLASS="tli"><A HREF="#aopt">Optimization: N-D Array Fields</A>
+</OL>
+<LI CLASS="tli"><A HREF="#preproc">CNS Preprocessor Directives</A>
+<OL CLASS="tol">
+<LI CLASS="tli"><A HREF="#temppre"><CODE>#PART</CODE></A> and <A HREF="#temppre"><CODE>#INCLUDEPART</CODE></A>
+<LI CLASS="tli"><A HREF="#unroll">Loop Unrolling</A>
+</OL>
+<LI CLASS="tli"><A HREF="#locarray">Fast Local Array Variables</A>
+<LI CLASS="tli"><A HREF="#dsplit">Dimension Splitting</A>
+<LI CLASS="tli"><A HREF="#helper">Helper Functions</A>
+<LI CLASS="tli"><A HREF="#mem">Checking Kernel Memory Usage</A>
+</OL>
+</OL>
+</OL>
+</UL>
+
+<HR>
+
+<H2><A NAME="dir">Files in a Package Directory</A></H2>
+
+The following table lists the files that make up a package and the kind of information each contains.<P>
+
+<B><I>Note: whenever you change any of these files, you must re-run the <A HREF="cns_build.html"><CODE>cns_build</CODE></A> command.</I></B><P>
+
+<TABLE BORDER="1">
+<TR><TD><B>File Name</B></TD><TD><B>Contents</B></TD><TD><B>Format</B></TD></TR>
+<TR><TD><CODE><I>package</I>_cns_type_<I>type</I>.m</CODE></TD><TD>
+<UL>
+<LI><A HREF="#prop">Property</A>, <A HREF="#field">field</A>, and <A HREF="#const">compile-time constant</A> definitions specific to a particular cell type.  Most of these will be inherited by any subtypes.
+<LI>May also be used to define <A HREF="#method">additional (MATLAB) methods</A> that apply to layers of this type (and subtypes).
+<LI>This file must exist for each cell type.
+</UL>
+</TD><TD><A HREF="#mdef">Details</A>.</TD></TR>
+<TR><TD><CODE><I>package</I>_cns_type_<I>type</I>.h</CODE></TD><TD>
+<UL>
+<LI>Compute <A HREF="#kernel">kernel</A> for cells of this type.  May be overridden (or completed) by subtypes.
+<LI>This file may or may not exist; click <A HREF="#compile">here</A> for details on kernel compilation.
+</UL>
+</TD><TD>Free-format C++ code.</TD></TR>
+<TR><TD><CODE><I>package</I>_cns_type_base.m</CODE></TD><TD>
+<UL>
+<LI><A HREF="#prop">Property</A>, <A HREF="#field">field</A>, and <A HREF="#const">compile-time constant</A> definitions common to all cell types.
+<LI>May also be used to define <A HREF="#method">additional (MATLAB) methods</A> that apply to layers of all types.
+<LI>This file must exist.
+</UL>
+</TD><TD><A HREF="#mdef">Details</A>.</TD></TR>
+<TR><TD><CODE><I>package</I>_cns_type_base.h</CODE></TD><TD>
+<UL>
+<LI>Base-level compute <A HREF="#kernel">kernel</A>.  May be overridden (or completed) by subtypes.
+<LI>This file may or may not exist; click <A HREF="#compile">here</A> for details on kernel compilation.
+</UL>
+</TD><TD>Free-format C++ code.</TD></TR>
+<TR><TD><CODE><I>package</I>_cns.m</CODE></TD><TD>
+<UL>
+<LI>Mainly used to define <A HREF="#field">fields</A> and <A HREF="#const">compile-time constants</A> that exist for entire models (not specific layers).
+<LI>May also be used to define <A HREF="#method">additional (MATLAB) methods</A> that apply to entire models.
+<LI>This file must exist, even if there are no such definitions to make.
+</UL>
+</TD><TD><A HREF="#mdef">Details</A>.</TD></TR>
+<TR><TD><CODE><I>package</I>_cns.h</CODE></TD><TD>
+<UL>
+<LI>A place to define <A HREF="#helper">helper functions</A> that compute kernels (in the above ".h" files) can use.
+<LI>This file need not exist if there are no helper functions.
+</UL>
+</TD><TD>Free-format C++ code.</TD></TR>
+</TABLE><P>
+
+Compiling a package produces several files starting with "<I>package</I>_cns_compiled_".<P>
+
+A package directory can contain other files; CNS ignores any file not starting with "<I>package</I>_cns".<P>
+
+<HR>
+
+<H2><A NAME="propfield">Defining Properties and Fields</A></H2>
+
+<H3><A NAME="mdef">".m" File Format</A></H3>
+
+Everything about a package -- cell properties, fields, etc. -- except the compute kernels themselves are defined in the package's ".m" files.  All the ".m" files look like this.<P>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+function varargout = <I>functionname</I>(method, varargin)
+
+switch method
+case 'props' , [varargout{1 : nargout}] = method_props (varargin{:});
+case 'fields', [varargout{1 : nargout}] = method_fields(varargin{:});
+<I>% Other methods you may wish to add.</I> (<A HREF="#method">Details</A>.)
+end
+
+return;
+
+%********************************************************************
+
+function p = method_props
+
+p = struct;
+
+<FONT COLOR="red"><I>% Define properties here.</I></FONT> (<A HREF="#prop">Details</A>.)
+
+return;
+
+%********************************************************************
+
+function d = method_fields
+
+d = struct;
+
+<FONT COLOR="red"><I>% Define fields here.</I></FONT> (<A HREF="#field">Details</A>.)
+<I>% Define compile-time constants here.</I> (<A HREF="#const">Details</A>.)
+
+return;
+
+%********************************************************************
+
+<I>% Other methods you may wish to add.</I> (<A HREF="#method">Details</A>.)
+</PRE></TD></TR></TABLE><P>
+
+When creating a new cell type, it's often most convenient to copy the ".m" file of another type and modify it.
+
+<H3><A NAME="prop">Type Properties</A></H3>
+
+The following table lists the properties you can define for a cell type.<P>
+
+Each property is defined by adding a line like this to the property section of the type's <A HREF="#mdef">".m" file</A>.
+
+<BLOCKQUOTE><PRE>
+p.<I>propname</I> = <I>value</I>;
+</PRE></BLOCKQUOTE>
+
+For example:
+
+<BLOCKQUOTE><PRE>
+p.abstract = true;
+</PRE></BLOCKQUOTE>
+
+<TABLE BORDER="1">
+<TR><TD><B>Property Name</B></TD><TD><B>Usage</B></TD></TR>
+<TR><TD><CODE>super</CODE></TD><TD>
+Specifies the name of the cell type of which this cell type is a subtype.  For example:
+<BLOCKQUOTE><PRE>
+p.super = 'filter';
+</PRE></BLOCKQUOTE>
+means this cell type will be a subtype of the "filter" type, and will inherit its properties and fields.<P>
+If you do not specify a supertype, this property defaults to "base".  (Note that you cannot define a supertype for the "base" type itself.)
+</TD></TR>
+<TR><TD><CODE>abstract</CODE></TD><TD>
+Defaults to <CODE>false</CODE>.  If set to <CODE>true</CODE>, this means the type exists only to be a supertype of other types.  In a CNS model, you cannot create a layer of cells of an abstract type, only a subtype.
+</TD></TR>
+<TR><TD><CODE>kernel</CODE></TD><TD>
+Defaults to <CODE>true</CODE>.  If set to <CODE>false</CODE>, this means cells of this type do not perform any computations.  This only makes sense for cells that are going to represent <I>inputs</I> to a model.
+</TD></TR>
+<TR><TD><CODE>blockYSize<BR>blockXSize</CODE></TD><TD>
+Together these define the <I>block size</I>, which is (more or less) how many cells in a layer the GPU will attempt to compute simultaneously.  The maximum block size depends on (a) the complexity of your kernel and (b) the resources on your GPU.  You will generally want to make the block size as large as possible; however, setting it too high will cause an error, so some experimentation is required.  A good first guess is usually (16 x 16).  <CODE>blockYSize</CODE> must be a multiple of 16, so usually you will be adjusting <CODE>blockXSize</CODE>.
+</TD></TR>
+<TR><TD><CODE>dnames<BR>dims<BR>dparts<BR>dmap</CODE></TD><TD>
+Together, these properties define the dimensionality of a layer of cells of this type.  Click <A HREF="#dims">here</A> for details.
+</TD></TR>
+<TR><TD><CODE>synType</CODE></TD><TD>
+If cells of this type are going to <A HREF="model.html#exsyn">explicitly enumerate their input cells</A>, use this property to specify which type of cells those inputs will be.  This tells CNS what fields will be available to read from the input cells.  You will want to be as specific as possible.  If <I>any</I> type of cell can be an input, just specify <CODE>p.syntype = 'base'</CODE>.  However, this would mean you could only read fields defined for all cell types, i.e. defined at the 'base' level.
+</TD></TR>
+<TR><TD><CODE>methods</CODE></TD><TD>
+A list of any <A HREF="#method">additional MATLAB methods</A> you want to define for this type.  (Click the link for details and syntax.)
+</TD></TR>
+</TABLE>
+
+<H4><A NAME="dims">Defining Dimensionality</A></H4>
+
+All non-abstract cell types must define their dimensionality, i.e.:
+
+<UL>
+<LI>how many dimensions will a layer of such cells have?
+<LI>what are the names of those dimensions?
+<LI>how should those dimensions be represented using the GPU's two internal dimensions?
+<LI>should cell positions within a layer be mapped to <A HREF="#common">common coordinates</A>?
+</UL>
+
+Consider the following example:
+
+<BLOCKQUOTE><PRE>
+p.dnames = {'f' 't' 'y' 'x'};
+p.dims   = {1 2 1 2};
+p.dparts = {2 1 1 2};
+</PRE></BLOCKQUOTE>
+
+Layers of this cell type will be 4-D; it will take four coordinates to identify a particular cell.  In CNS you will be able to refer to the dimensions by their names ('f', 't', 'y', 'x').
+
+<CODE>dims</CODE> and <CODE>dparts</CODE> tell CNS how each of the four dimensions is represented in the GPU's two dimensions.  Here, dimensions 'f' and 'y' are assigned to internal dimension 1, with 'f' as the "outer" dimension (part 2) and 'y' as the "inner" dimension (part 1).  This means that cells with adjacent 'y' values will be stored next to each other in GPU memory, while cells with adjacent 'f' values may be far apart.  Dimensions 't' and 'x' are similarly assigned to internal dimension 2.
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD>
+<IMG SRC="figs/dims.jpeg">
+</TD></TR></TABLE></BLOCKQUOTE>
+
+The choice of inner and outer dimensions has performance consequences: if some other cell is pooling over cells in this layer using nested <CODE>for</CODE> loops, the inner loops should correspond to the inner dimensions.<P>
+
+Here is an example of the simpler case where there are only two dimensions.
+
+<BLOCKQUOTE><PRE>
+p.dnames = {'y' 'x'};
+p.dims   = {1 2};
+p.dparts = {1 1};
+</PRE></BLOCKQUOTE>
+
+You can even have just one dimension; for example:
+
+<BLOCKQUOTE><PRE>
+p.dnames = {'f'};
+p.dims   = {1};
+p.dparts = {1};
+</PRE></BLOCKQUOTE>
+
+<B><I>Performance note:</I></B> CNS becomes inefficient when the size of internal dimension 1, for a layer, is small relative to <A HREF="#prop"><CODE>blockYSize</CODE></A>.  For example, if your layer is represented internally as a (1 x 200) array (dimension 1 is of size 1) and your <CODE>blockYSize</CODE> is 16, 15/16 of your GPU's processors will be idle while computing this layer.  Similarly, if dimension 1 is of size 17, you will be wasting 15/32 of your processing power.  This should be taken into consideration when assigning external dimensions to internal ones.<P>
+
+Note that dimensionality cannot be overridden by subtypes.
+
+<H4><A NAME="common">Mapping Dimensions to a Common Coordinate Space</A></H4>
+
+The final dimension-related property, <CODE>dmap</CODE>, activates a powerful feature of the CNS framework.  In networks where connectivity is assumed to be regular (i.e. cells do not have explicit lists of their inputs), a cell needs to be able to "find" its inputs, i.e., infer which cells in some other layer should be its inputs, based on its own position in its layer.  This can be awkward for a number of reasons.<P>
+
+Consider this common case.  Say we have two 2-D layers:
+
+<UL>
+<LI>Layer 1 is a 256x256 grid of pixels.
+<LI>Layer 2 is the result of a 4x4 convolution over layer 1, subsampled by a factor of 2.  (The filter moves over layer 1 in steps of 2.)  Due to the subsampling, and edge effects, layer 2 will be 127x127.
+</UL>
+
+Even after one such operation, it is a little tricky to keep the proper cells in correspondence between the two layers.  There are a number of cases where it gets worse:
+
+<UL>
+<LI>Working with an image pyramid having multiple scales, and trying to do pooling over scales.
+<LI>Trying to pool the results of two different pathways through a network, which have involved different steps, and now have different resolutions.
+</UL>
+
+CNS's solution to this is to map dimensions to a common coordinate space that uses floating-point coordinates (usually, though not necessarily, between 0 and 1).  Consider the figure below for our two-layer example:
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD>
+<IMG SRC="figs/rfs.jpeg">
+</TD></TR></TABLE></BLOCKQUOTE>
+
+Now each cell in layers 1 and 2 is positioned in a common coordinate space.  A layer 2 cell can find its inputs simply by asking for its four nearest neighbors in each dimension.<P>
+
+The <CODE>dmap</CODE> property controls which dimensions get mapped like this.  Consider our <A HREF="#dims">4-D example</A> above.  If we only have limited receptive fields over dimensions 'y' and 'x', we need only map those two dimensions:
+
+<BLOCKQUOTE><PRE>
+p.dnames = {'f' 't' 'y' 'x'};
+p.dims   = {1 2 1 2};
+p.dparts = {2 1 1 2};
+p.dmap   = [false false true true];
+</PRE></BLOCKQUOTE>
+
+When you are building a network model using mapped dimensions, the <A HREF="cns_mapdim.html"><CODE>cns_mapdim</CODE></A> function helps you assign the common coordinates.
+
+<H3><A NAME="field">Fields</A></H3>
+
+In a CNS model, a <I>field</I> is a numerical quantity that is associated with the model, a layer (or <A HREF="model.html#group">group</A> of layers), a single cell, or a single synapse.  All fields have an initial value at the time a model is initialized: either one provided by you at initialization or one defined as a default at package definition time.  Some fields are variables that can change their value as a model runs inside the GPU; others can only be changed from MATLAB.  All fields can be accessed from <A HREF="#kernel">kernels</A> using named macros.<P>
+
+Each field is defined by adding a line like this to the fields section of the appropriate <A HREF="#mdef">".m" file</A>.
+
+<BLOCKQUOTE><PRE>
+d.<I>fieldname</I> = {<I>class</I>, <I>modifiers</I>};
+</PRE></BLOCKQUOTE>
+
+For example:
+
+<BLOCKQUOTE><PRE>
+d.V_m = {'cv', 'dflt', -70.0};
+</PRE></BLOCKQUOTE>
+
+You choose the field's <I>class</I> from the following table.  The class determines:
+
+<UL>
+<LI>The <I>scope</I> of the field: whether the field is associated with an entire model, a layer, a <A HREF="model.html#group">group</A> of layers, a single cell, or a single synapse.
+<LI>Where you <I>define</I> it: most fields are defined in the appropriate <CODE><I>package</I>_cns_type_<I>type</I>.m</CODE> file, but fields with "model" scope are defined at the package level, i.e. the <CODE><I>package</I>_cns.m</CODE> file.  (Note that subtypes inherit all the fields of their parent type.)
+<LI>Whether the field can be <I>public</I> (readable from any cell) or private (readable only from cells within the scope in which it is defined).
+<LI>The <I>size</I> of the field.  Most fields can be defined to hold scalars or vectors.  A few can hold entire N-D arrays; a common use for these is to store static feature dictionaries.
+<LI>Whether the field is <I>variable</I> (can be written to) while the model is running in the GPU or not.
+</UL>
+
+In the above example, <CODE>"'dflt', -70.0"</CODE> is a <I>modifier</I>, supplying additional information about the field (in this case, a default value).  The class determines which modifiers apply (see following sections).<P>
+
+<TABLE BORDER="1">
+<TR><TD><B>Class</B></TD><TD><B>Scope</B></TD><TD><B>Defined For</B></TD><TD><B>Public?</B></TD><TD><B>Size</B></TD><TD><B>Variable?</B></TD><TD><B>Description / How to Define</B></TD></TR>
+<TR><TD>mp</TD><TD>model</TD><TD>package</TD><TD>yes</TD><TD>scalar or vector</TD><TD>no</TD><TD>
+<A HREF="#cfield">Details</A>.
+</TD></TR>
+<TR><TD>mz</TD><TD>model</TD><TD>package</TD><TD>yes</TD><TD>scalar or vector</TD><TD>no</TD><TD>
+<A HREF="#pfield">Details</A>.
+</TD></TR>
+<TR><TD>ma</TD><TD>model</TD><TD>package</TD><TD>yes</TD><TD>N-D</TD><TD>no</TD><TD>
+<A HREF="#afield">Details</A>.
+</TD></TR>
+<TR><TD>gp</TD><TD>group</TD><TD>type</TD><TD>define</TD><TD>scalar or vector</TD><TD>no</TD><TD>
+<A HREF="#cfield">Details</A>.
+</TD></TR>
+<TR><TD>gz</TD><TD>group</TD><TD>type</TD><TD>no</TD><TD>scalar or vector</TD><TD>no</TD><TD>
+<A HREF="#pfield">Details</A>.
+</TD></TR>
+<TR><TD>ga</TD><TD>group</TD><TD>type</TD><TD>define</TD><TD>N-D</TD><TD>no</TD><TD>
+<A HREF="#afield">Details</A>.
+</TD></TR>
+<TR><TD>lp</TD><TD>layer</TD><TD>type</TD><TD>define</TD><TD>scalar or vector</TD><TD>no</TD><TD>
+<A HREF="#cfield">Details</A>.
+</TD></TR>
+<TR><TD>lz</TD><TD>layer</TD><TD>type</TD><TD>no</TD><TD>scalar or vector</TD><TD>no</TD><TD>
+<A HREF="#pfield">Details</A>.
+</TD></TR>
+<TR><TD>la</TD><TD>layer</TD><TD>type</TD><TD>define</TD><TD>N-D</TD><TD>no</TD><TD>
+<A HREF="#afield">Details</A>.
+</TD></TR>
+<TR><TD>cc</TD><TD>cell</TD><TD>type</TD><TD>define</TD><TD>scalar or vector</TD><TD>no</TD><TD>
+<A HREF="#cvfield">Details</A>.
+</TD></TR>
+<TR><TD>cv</TD><TD>cell</TD><TD>type</TD><TD>define</TD><TD>scalar or vector</TD><TD>yes</TD><TD>
+<A HREF="#cvfield">Details</A>.
+</TD></TR>
+<TR><TD>sc</TD><TD>synapse</TD><TD>type</TD><TD>no</TD><TD>scalar or vector</TD><TD>no</TD><TD>
+<A HREF="#sfield">Details</A>.
+</TD></TR>
+<TR><TD>sv</TD><TD>synapse</TD><TD>type</TD><TD>no</TD><TD>scalar or vector</TD><TD>yes</TD><TD>
+<A HREF="#sfield">Details</A>.
+</TD></TR>
+</TABLE><P>
+
+<H4><A NAME="cfield">Parameter Fields (classes: mp, gp, lp)</A></H4>
+
+This class of fields is good for storing small parameters that apply to an entire layer (lp), group of layers (gp), or model as a whole (mp).  They can only be set/reset from MATLAB; they cannot be changed as the model is running in the GPU.  Internally they are stored in the GPU's constant cache, so kernels can access them quickly.<P>
+
+<TABLE BORDER="1"><TR><TD>
+<B>Required syntax:</B>
+<BLOCKQUOTE><PRE>
+d.<I>fieldname</I> = {<I>class</I>};
+</PRE></BLOCKQUOTE>
+</TD></TR><TR><TD>
+<B>Optional modifiers:</B>
+<UL>
+<LI><CODE>'mv'</CODE> if the parameter will be a (small) vector.
+<LI><CODE>'int'</CODE> to store integers.
+<LI><CODE>'dflt'</CODE> to declare a default value.
+<LI><CODE>'private'</CODE> if the field should not be readable by cells outside its layer (lp) or group (gp).  Not valid for 'mp' fields.
+</UL>
+</TD></TR><TR><TD>
+<B>Examples:</B>
+<BLOCKQUOTE><PRE>
+d.rfSize = {'lp', 'int'};
+</PRE></BLOCKQUOTE>
+This defines a parameter field that will be associated with a single layer.  It will take a single integer value which, because there is no default, must be explicitly provided at initialization time.
+<BLOCKQUOTE><PRE>
+d.alpha = {'mp', 'mv', 'dflt', [0.1 0.2]};
+</PRE></BLOCKQUOTE>
+This defines a parameter field that will be associated with an entire model, takes multiple floating-point values, and defaults to the vector [0.1 0.2] if a value is not explictly provided at initialization time.
+</TD></TR></TABLE>
+
+<H4><A NAME="pfield">Pointer Fields (classes: mz, gz, lz)</A></H4>
+
+These are special <A HREF="#cfield">parameter fields</A> that hold the number of another layer in the model, i.e. that "point" to another layer.  Kernels use these to read the values of fields in other layers.<P>
+
+<TABLE BORDER="1"><TR><TD>
+<B>Required syntax:</B>
+<BLOCKQUOTE><PRE>
+d.<I>fieldname</I> = {<I>class</I>, 'type', <I>type</I>};
+</PRE></BLOCKQUOTE>
+Where:
+<UL>
+<LI><CODE><I>type</I></CODE> is the type of layer that will be pointed to.
+</UL>
+</TD></TR><TR><TD>
+<B>Optional modifiers:</B>
+<UL>
+<LI><CODE>'mv'</CODE> if the parameter will be a (small) vector of layer numbers.
+<LI><CODE>'dflt'</CODE> to declare a default value.  For pointers, only 0 (if scalar) or [] (if vector) really make sense.
+</UL>
+</TD></TR><TR><TD>
+<B>Examples:</B>
+<BLOCKQUOTE><PRE>
+d.zw = {'lz', 'type', 'base'};
+</PRE></BLOCKQUOTE>
+This defines a pointer field that will be set separately for each layer (of this type).  It takes a single layer number and has no default value.  The layer being pointed <I>to</I> can be of any type (because all types are subtypes of the 'base' type).
+<BLOCKQUOTE><PRE>
+d.pzs = {'lz', 'type', 'input', 'mv', 'dflt', []};
+</PRE></BLOCKQUOTE>
+This defines a pointer field that will be set separately for each layer (of this type).  It can store a vector of layer numbers and defaults to [].  Here, the layer(s) being pointed <I>to</I> must be of type 'input' (or a subtype).
+</TD></TR></TABLE>
+
+<H4><A NAME="afield">N-D Array Fields (classes: ma, ga, la)</A></H4>
+
+N-D array fields allow you to share a large, N-dimensional array of data among all cells in a layer (la), group of layers (ga), or model as a whole (ma).  A common usage is storing a large feature dictionary.  These arrays can only be set/reset from MATLAB; they cannot be changed as the model is running in the GPU.  Unlike <A HREF="#cfield">parameter</A> fields, they are stored in GPU main memory, which has high latency (but the <CODE>'cache'</CODE> option can mitigate this).<P>
+
+<TABLE BORDER="1"><TR><TD>
+<B>Required syntax:</B>
+<BLOCKQUOTE><PRE>
+d.<I>fieldname</I> = {<I>class</I>, 'dnames', <I>dnames</I>, 'dims', <I>dims</I>, 'dparts', <I>dparts</I>};
+</PRE></BLOCKQUOTE>
+Where:
+<UL>
+<LI><CODE><I>dnames</I></CODE>, <CODE><I>dims</I></CODE>, and <CODE><I>dparts</I></CODE> define the dimensionality of the N-D array, using the <A HREF="#dims">same syntax</A> as for cell types (excluding <CODE><I>dmap</I></CODE>).
+</UL>
+</TD></TR><TR><TD>
+<B>Optional modifiers:</B>
+<UL>
+<LI><CODE>'cache'</CODE> to attempt to speed up access to this field (using a GPU texture).  If your kernels are going to read an array heavily (e.g. inside loops), consider using this option.  If access will be light, it's probably a good idea to keep the number of textures down by omitting it.
+<LI><CODE>'mv'</CODE> to allow the field to hold multiple (possibly different-sized) N-D arrays.
+<LI><CODE>'int'</CODE> to store integers.
+<LI><CODE>'private'</CODE> if the field should not be readable by cells outside its layer (la) or group (ga).  Not valid for 'ma' fields.
+</UL>
+</TD></TR><TR><TD>
+<B>Examples:</B>
+<BLOCKQUOTE><PRE>
+d.fSizes = {'ga', 'dnames', {'f'}, 'dims', {1}, 'dparts', {1}, 'int'};
+</PRE></BLOCKQUOTE>
+This defines a field that will be associated with a <A HREF="model.html#group">group</A> of layers and will contain a 1-D array of integers.
+<BLOCKQUOTE><PRE>
+d.fVals = {'ga', 'cache', 'dnames', {'y' 'x' 'f'}, 'dims', {1 2 1}, 'dparts', {1 1 2}};
+</PRE></BLOCKQUOTE>
+This defines a field that will be associated with a <A HREF="model.html#group">group</A> of layers and will contain a 3-D array of floating-point numbers.  Reads from the array will be cached using a GPU texture.
+</TD></TR></TABLE>
+
+<H4><A NAME="cvfield">Cell Fields (classes: cc, cv)</A></H4>
+
+A cell field holds a scalar or vector value for each cell.  Cell fields are stored in GPU main memory, which has high latency (but the <CODE>'cache'</CODE> option can mitigate this).
+
+<UL>
+<LI>'cv' fields ('cell variables') may change their values as the model runs inside the GPU.  <I>Each cell can only change its own value.</I>
+<LI>'cc' fields ('cell constants') are used to store per-cell constants.  Their values can only be changed from MATLAB.
+</UL>
+
+By default, cell fields are public -- a cell's value for the field can be read by other cells.  Public 'cv' fields are typically used to store output values.  To avoid <A HREF="http://en.wikipedia.org/wiki/Race_condition">race conditions</A>, public 'cv' fields are <A HREF="model.html#execorder">double-buffered</A> so that changes during one iteration of the network only become visible in the next iteration.<P>
+
+Cell fields can optionally be declared private, meaning they are not readable by other cells.  Private 'cv' fields are useful for storing internal state variables in dynamic models, and private 'cc' fields can hold per-cell constants that are only used within each single cell.<P>
+
+Currently, only private cell fields can hold multiple (vector) values.  The number of values must be the same for all cells in a layer.<P>
+
+<TABLE BORDER="1"><TR><TD>
+<B>Required syntax:</B>
+<BLOCKQUOTE><PRE>
+d.<I>fieldname</I> = {<I>class</I>};
+</PRE></BLOCKQUOTE>
+</TD></TR><TR><TD>
+<B>Optional modifiers:</B>
+<UL>
+<LI><CODE>'private'</CODE> to disallow reading of the value of this field by other cells.  Note that it's particularly important to remember this flag for private <I>variables</I>, since private cell variables don't require <A HREF="model.html#execorder">double-buffering</A>.
+<LI><CODE>'cache'</CODE> to attempt to speed up access to this field (using a GPU texture).  This only makes sense (and is only allowed) for public fields.  If kernels are going to be reading this field heavily (e.g. inside loops), consider using this option.  If access will be light, it's probably a good idea to keep the number of textures down by omitting it.
+<LI><CODE>'mv'</CODE> if you want to store multiple values per cell.  Currently only possible for private fields.
+<LI><CODE>'int'</CODE> to store integers.
+<LI><CODE>'dflt'</CODE> to declare a default value.
+</UL>
+</TD></TR><TR><TD>
+<B>Examples:</B>
+<BLOCKQUOTE><PRE>
+d.V_m = {'cv', 'cache', 'dflt', -70.0};
+</PRE></BLOCKQUOTE>
+This defines a variable that will contain a floating-point number for each cell.  Unless otherwise specified during initialization, it will start out with value -70.0 for each cell.  The field is readable by other cells and cached for speed using a GPU texture.
+<BLOCKQUOTE><PRE>
+d.beta = {'cc', 'private', 'mv'};
+</PRE></BLOCKQUOTE>
+This defines a per-cell, multivalued, floating-point constant with no default value.  Values for all cells will have to be provided at initialization time.  Each cell can only read the value of its own constant.
+<BLOCKQUOTE><PRE>
+d.t_last = {'cv', 'private', 'int', 'dflt', 0};
+</PRE></BLOCKQUOTE>
+This defines a per-cell, scalar integer variable with a default value of 0.  The field is not readable by other cells.
+</TD></TR></TABLE>
+
+<H4><A NAME="sfield">Synapse Fields (classes: sc, sv)</A></H4>
+
+Synapse fields are similar to <I>private</I> <A HREF="#cvfield">cell fields</A> (above), except they are associated with <I>each</I> of a cell's <A HREF="model.html#exsyn">explicit synapses</A>.  They can be used to keep track of separate constants and variables for each synapse.
+
+<H3><A NAME="const">Compile-Time Constants</A></H3>
+
+A compile-time constant is a numerical quantity whose value is assigned at package definition time; it cannot be changed without modifying and recompiling the package.  Compile-time constants can be defined in the <A HREF="#mdef">same places as fields</A>, and can be accessed both from MATLAB (using the <A HREF="cns_getconsts.html"><CODE>cns_getconsts</CODE></A> function) and from <A HREF="#constmac">within kernels</A> (by name).<P>
+
+A floating-point constant can be defined like this:
+
+<BLOCKQUOTE><PRE>
+d.dt = 0.0001;
+</PRE></BLOCKQUOTE>
+
+An integer constant is defined like this:
+
+<BLOCKQUOTE><PRE>
+d.spk_dur = {11, 'int'};
+</PRE></BLOCKQUOTE>
+
+Note: for every <A HREF="#field">field</A> with a default value, a compile-time constant is created called <CODE>"<I>fieldname</I>_dflt"</CODE>.  Conversely, defining such a constant is an alternative method for assigning a default value to a field.
+
+<H3><A NAME="method">Additional MATLAB Methods</A></H3>
+
+Since a <A HREF="#dir">package directory</A> already contains a set of <A HREF="#mdef">".m" files</A> that form a type hierarchy (plus the <CODE><I>package</I>_cns.m</CODE> file), these files are a convenient place to put additional MATLAB methods.<P>
+
+Currently, the only such method that CNS will automatically call, if it is present, is an <CODE>'init'</CODE> method defined in the <CODE><I>package</I>_cns.m</CODE> file.  It will be called just before a model is initialized on the GPU, and is a good place to put code that fills in some fields for you automatically.  There is an example of this in the demo package; see the file <CODE>cns/demo/demopkg_cns.m</CODE>.  To call methods other than this one, you can use the <A HREF="cns_package.html"><CODE>cns_package</CODE></A> and <A HREF="cns_type.html"><CODE>cns_type</CODE></A> functions.<P>
+
+To add an additional method to a <A HREF="#mdef">".m" file</A>, you must:
+
+<OL>
+<LI>Add a line to the initial <CODE>case</CODE> statement.
+<LI>Add the method name to the <CODE>methods</CODE> property in the properties section of the file, i.e.:
+<BLOCKQUOTE><PRE>
+p.methods = {'<I>mymethod1</I>', '<I>mymethod2</I>', ...};
+</PRE></BLOCKQUOTE>
+<LI>Add the method itself to the end.  The first argument must accept a <A HREF="model.html#build">network model structure</A>.  For type-specific methods that work with existing layers, the second argument must accept the layer number.  The remaining arguments, and all output arguments, are up to you.
+</OL>
+
+A subtype can override a method provided by a supertype just by declaring a method of the same name.  If the subtype's version needs to call the overridden version, it can do so using the function <A HREF="cns_super.html"><CODE>cns_super</CODE></A>.<P>
+
+<HR>
+
+<H2><A NAME="kernel">Writing Kernels</A></H2>
+
+A kernel is a function that gets called separately for every cell in the network.  Its job is to update the cell's variables; specifically, any cell variables (class <A HREF="#cvfield">cv</A>) and synapse variables (class <A HREF="#sfield">sv</A>).  In order to perform this computation, a cell's kernel can use any of the information it has access to: values of <A HREF="#cvfield">public fields</A> in other cells, the current values of its own fields, parameters and N-D arrays defined at the model/group/layer level, etc.<P>
+
+Every type of cell has a single kernel, or no kernel.  During a single network iteration, every cell (except those without a kernel) generally gets its compute kernel called once (although this <A HREF="model.html#execorder">can be changed</A>).  In some networks (e.g., spiking simulations) all the cells can be computed in parallel, while in other networks, layers must be computed <A HREF="model.html#execorder">in a specific order</A>.<P>
+
+Kernels are written in C++, augmented by <A HREF="#macros">macros</A> generated by CNS which mainly assist in reading and writing fields.  Consider the following kernel, which is from the demo package.  It applies a bank of different 2-D filters to an image, generating a 3-D result.  Like all kernels, this code is responsible for computing only a single cell in the layer.  CNS macros are shown in <FONT COLOR="red">RED</FONT> with names supplied by the package author in <FONT COLOR="red"><B>BOLD</B></FONT>.  The rest is ordinary C++.
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+<FONT COLOR="green">// Find coordinates of input cells in the previous layer.</FONT>
+
+int y1, y2, x1, x2;
+<FONT COLOR="red">GET_<B>LAYER</B>_<B>Y</B>_RF_NEAR</FONT>(<FONT COLOR="red"><B>PZ</B></FONT>, <FONT COLOR="red"><B>FVALS</B>_<B>Y</B>_SIZE</FONT>, y1, y2);
+<FONT COLOR="red">GET_<B>LAYER</B>_<B>X</B>_RF_NEAR</FONT>(<FONT COLOR="red"><B>PZ</B></FONT>, <FONT COLOR="red"><B>FVALS</B>_<B>X</B>_SIZE</FONT>, x1, x2);
+int f = <FONT COLOR="red">THIS_<B>F</B></FONT>;
+
+<FONT COLOR="green">// Iterate over input cells.</FONT>
+
+float res = 0.0f;
+float len = 0.0f;
+
+for (int j = 0, x = x1; x <= x2; j++, x++) {
+    for (int i = 0, y = y1; y <= y2; i++, y++) {
+
+        <FONT COLOR="green">// Read value of input cell.</FONT>
+        float v = <FONT COLOR="red">READ_<B>LAYER</B>_<B>VAL</B></FONT>(<FONT COLOR="red"><B>PZ</B></FONT>, 0, y, x);
+
+        <FONT COLOR="green">// Read corresponding filter value.</FONT>
+        float w = <FONT COLOR="red">READ_<B>FVALS</B></FONT>(i, j, f);
+
+        res += w * v;
+        len += v * v;
+
+    }
+}
+
+res = fabsf(res);
+if (len > 0.0f) res /= sqrtf(len);
+
+<FONT COLOR="green">// Write out value of this cell.</FONT>
+
+<FONT COLOR="red">WRITE_<B>VAL</B></FONT>(res);
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+
+<H3><A NAME="compile">Kernel Files and Compilation</A></H3>
+
+When <A HREF="cns_build.html"><CODE>cns_build</CODE></A> compiles a package, it needs to compile a kernel for every <A HREF="#prop">non-abstract</A> cell type (unless the type's <A HREF="#prop"><CODE>kernel</CODE></A> property is set to <CODE>false</CODE>).  It starts by looking for the file <CODE><I>package</I>_cns_type_<I>type</I>.h</CODE>.  If that file doesn't exist, <CODE>cns_build</CODE> will look for the supertype's <CODE>.h</CODE> file, and so on up the hierarchy.<P>
+
+It is also possible for an abstract cell type to define a "template" kernel which contains placeholders that get filled in with code provided by a subtype.  See the <A HREF="#temppre"><CODE>#PART</CODE></A> and <A HREF="#temppre"><CODE>#INCLUDEPART</CODE></A> preprocessor directives.
+
+<H3><A NAME="cuse">C++ Usage in Kernels</A></H3>
+
+When you write a kernel, you are writing the body of a function; your code will actually be embedded inside a function before it is compiled.  Hence, you can only write C++ that is valid inside a function body.  (If you need to write any auxiliary helper functions, click <A HREF="#helper">here</A>.)<P>
+
+Most standard C++ mathematical functions are supported.<P>
+
+It is important to note that GPUs are only fast for 32-bit quantities (or smaller).  Your code should mainly use the datatypes <CODE>float</CODE> and <CODE>int</CODE>.  Avoid the <CODE>double</CODE> type.
+
+<UL>
+<LI>Use the single-precision version of floating point functions, e.g., <CODE>sqrtf(x)</CODE> instead of <CODE>sqrt(x)</CODE>.
+<LI>Floating-point constants should end in "f", for example, <CODE>0.0f</CODE>.
+</UL>
+
+For details on the speed of various mathematical operations on the GPU, refer to the CUDA Programming Guide.  One operation that is particularly slow is integer division / modulo.
+
+<H3><A NAME="macros">CNS Macros</A></H3>
+
+This section describes all the macros that CNS generates for you to use in a kernel of a given type.  Most of these are based on the <A HREF="#field">fields</A> accessible from that kernel, which include:
+
+<UL>
+<LI>Fields defined in this type.
+<LI>Fields defined in any supertypes.
+<LI>Fields defined at the package level, i.e. having "model" scope.
+<LI>Fields defined in other types to which we have <A HREF="#pfield">pointer fields</A> or <A HREF="model.html#exsyn">explicit synapses</A>.
+</UL>
+
+Macro names are always entirely UPPER case, regardless of the case of your definitions.  This makes it easier to distinguish CNS macros from regular C++.<P>
+
+<B><I>Note: the <A HREF="cns_build.html"><CODE>cns_build</CODE></A> function has a <CODE>help</CODE> option that lists all the macros available to each cell type's kernel.</I></B>
+
+<H4><A NAME="genmac">General</A></H4>
+
+<TABLE BORDER="1"><TR><TD><B>Macro(s)</B></TD><TD><B>Description</B></TD></TR><TR><TD><PRE>
+ITER_NO
+</PRE></TD><TD VALIGN="top">
+The current network iteration number.  Initialized to 1 by the <A HREF="cns.html#init"><CODE>cns('init')</CODE></A> command.  Automatically incremented by the <A HREF="cns.html#run"><CODE>cns('run')</CODE></A> command.  Can also be queried or changed from MATLAB using the <A HREF="cns.html#get"><CODE>cns('get')</CODE></A> and <A HREF="cns.html#set"><CODE>cns('set')</CODE></A> commands.  (Note: ITER_NO is zero-based in kernels, but one-based in MATLAB.)
+</TD></TR><TR><TD><PRE>
+PHASE_NO
+</PRE></TD><TD VALIGN="top">
+For networks in which a cell's kernel is <A HREF="model.html#execorder">called more than once</A> in a full network iteration, identifies which phase of the computation this is.  For example, in a convolutional network, a single network iteration consists of a forward pass followed by a backward pass.  Each cell performs computations twice.  <CODE>PHASE_NO</CODE> is zero based, so in this example the cell would be computed once with <CODE>PHASE_NO == 0</CODE> and once with <CODE>PHASE_NO == 1</CODE>.
+</TD></TR><TR><TD><PRE>
+PRINT(format, ...)
+</PRE></TD><TD VALIGN="top">
+Use this instead of C++'s <A HREF="http://www.cplusplus.com/reference/clibrary/cstdio/printf"><CODE>printf</CODE></A> function to print output to the terminal.  Note that this only works when running CNS in <A HREF="cns.html#init">debug mode</A>.  Uses the same syntax as <CODE>printf</CODE>.
+</TD></TR><TR><TD><PRE>
+ERROR(format, ...)
+</PRE></TD><TD VALIGN="top">
+Just like <CODE>PRINT</CODE> above, except that it halts execution.  As with <CODE>PRINT</CODE>, it only works in <A HREF="cns.html#init">debug mode</A>.
+</TD></TR><TR><TD><PRE>
+CNS_INTMIN
+CNS_INTMAX
+CNS_FLTMIN
+CNS_FLTMAX
+</PRE></TD><TD VALIGN="top">
+The minimum and maximum values of the <CODE>int</CODE> and <CODE>float</CODE> datatypes in CNS, respectively.  CNS also provides equivalent MATLAB functions (same names but lower case) that return these values.
+</TD></TR></TABLE>
+
+<H4><A NAME="gridmac">Connectivity: Regular Grid</A></H4>
+
+The following macros are used in kernels that assume <A HREF="#common">regular grid connectivity</A> among cells.<P>
+
+<TABLE BORDER="1"><TR><TD><B>Macro(s)</B></TD><TD><B>Description</B></TD></TR><TR><TD><PRE>
+<I>type</I>_PTR
+</PRE></TD><TD VALIGN="top">
+This is a C++ class that can hold a pointer to a layer of a particular type of cells.  Use this class if you need to define a local (C++) variable to hold such a pointer (whose value would be retrieved using one of the macros immediately below).  Such pointers are used as inputs to many other macros.<P>
+<BLOCKQUOTE><DL>
+<DT><CODE><I>type</I></CODE></DT><DD>Name of the cell type.</DD>
+</DL></BLOCKQUOTE>
+For example (assuming a cell type called "weight" and a multivalued pointer field called "pzs" that contains pointers to "weight" layers):
+<BLOCKQUOTE><PRE>
+for (int i = 0; i < NUM_PZS; i++) {
+    <FONT COLOR="red">WEIGHT_PTR p</FONT> = PZS(i);
+    ...
+    int yc = WEIGHT_Y_SIZE(<FONT COLOR="red">p</FONT>);
+    int xc = WEIGHT_X_SIZE(<FONT COLOR="red">p</FONT>);
+    ...
+}
+</PRE></BLOCKQUOTE>
+Of course, often you might not want to define a local variable.  You could also do this:
+<BLOCKQUOTE><PRE>
+int yc = WEIGHT_Y_SIZE(PZS(i));
+</PRE></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+THIS_Z
+</PRE></TD><TD VALIGN="top">
+Returns a <CODE><I>type</I>_PTR</CODE> to the current layer, where <CODE><I>type</I></CODE> is the current type.
+</TD></TR><TR><TD><PRE>
+<I>field</I>
+<I>field</I>(e)
+</PRE></TD><TD VALIGN="top">
+Returns a <CODE><I>type</I>_PTR</CODE> to another layer, where <CODE><I>type</I></CODE> is the type of that layer.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of a <A HREF="#pfield">pointer field</A> which is defined to point to layers of that type.</DD>
+<DT><CODE>e</CODE></DT><DD>The zero-based element number, if the pointer field is multivalued.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+NUM_<I>field</I>
+</PRE></TD><TD VALIGN="top">
+The number of values in a multivalued <A HREF="#pfield">pointer field</A>.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the multivalued pointer field.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+<I>dim</I>_SIZE
+<I>type</I>_<I>dim</I>_SIZE(z)
+</PRE></TD><TD VALIGN="top">
+Return the number of cells along a particular <A HREF="#dims">dimension</A> of this or another layer.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>dim</I></CODE></DT><DD>Name of the dimension.</DD>
+<DT><CODE><I>type</I></CODE></DT><DD>Type name of the other layer.</DD>
+<DT><CODE>z</CODE></DT><DD>Pointer to the other layer.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+THIS_<I>dim</I>
+</PRE></TD><TD VALIGN="top">
+Zero-based integer coordinate of this cell in its layer along a particular <A HREF="#dims">dimension</A>.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>dim</I></CODE></DT><DD>Name of the dimension.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+<A NAME="getrf"></A>GET_<I>type</I>_<I>dim</I>_RF_NEAR(z, n, &v1, &v2)
+GET_<I>type</I>_<I>dim</I>_RF_DIST(z, r, &v1, &v2)
+GET_<I>type</I>_<I>dim</I>_RF_NEAR(z, n, &v1, &v2, &i1, &i2)
+GET_<I>type</I>_<I>dim</I>_RF_DIST(z, r, &v1, &v2, &i1, &i2)
+</PRE></TD><TD VALIGN="top">
+Find a range of (zero-based integer) coordinates of other cells that are close to this cell in <A HREF="#common">common coordinate space</A> along a particular <A HREF="#dims">dimension</A>.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>type</I></CODE></DT><DD>Type name of the layer being searched.</DD>
+<DT><CODE><I>dim</I></CODE></DT><DD>Name of the dimension (which must be possessed by both the current layer and the layer being searched).</DD>
+<DT><CODE>z</CODE></DT><DD>Pointer to the layer being searched.  Can be the current layer or another layer.</DD>
+<DT><CODE>n</CODE></DT><DD>For the <CODE>"NEAR"</CODE> macros, find the <CODE>n</CODE> nearest cells in common coordinate space, where <CODE>n</CODE> is a positive integer.</DD>
+<DT><CODE>r</CODE></DT><DD>For the <CODE>"DIST"</CODE> macros, find all cells within distance <CODE>r</CODE> of this cell in common coordinate space, where <CODE>r</CODE> is a floating point value expressed in the units of the common coordinate space.</DD>
+<DT><CODE>&v1</CODE></DT><DD>Returns the first valid coordinate in the range.</DD>
+<DT><CODE>&v2</CODE></DT><DD>Returns the last valid coordinate in the range.  Will be greater than or equal to <CODE>v1</CODE> unless no valid coordinates were found.</DD>
+<DT><CODE>&i1</CODE></DT><DD>Same as <CODE>v1</CODE> except no range checking is done, so may return a coordinate less than 0.</DD>
+<DT><CODE>&i2</CODE></DT><DD>Same as <CODE>v2</CODE> except no range checking is done, so may return a coordinate greater than the dimension size minus 1.</DD>
+</DL></BLOCKQUOTE>
+The first two macros return false if the returned range (<CODE>v1</CODE> - <CODE>v2</CODE>) is smaller than expected, i.e., had to be adjusted so as not to contain invalid coordinates.<P>
+The last two macros return false if the returned range (<CODE>v1</CODE> - <CODE>v2</CODE>) is empty, i.e., no valid coordinates were found.<P>
+Note: <A HREF="cns_getrfnear.html"><CODE>cns_getrfnear</CODE></A> and <A HREF="cns_getrfdist.html"><CODE>cns_getrfdist</CODE></A> are the equivalent MATLAB functions.
+</TD></TR><TR><TD><PRE>
+THIS_<I>dim</I>_CENTER
+<I>type</I>_<I>dim</I>_CENTER(z, c)
+</PRE></TD><TD VALIGN="top">
+Return the position in <A HREF="#common">common coordinate space</A> of this cell or a cell in another layer along a particular <A HREF="#dims">dimension</A>.  This is a floating point number.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>dim</I></CODE></DT><DD>Name of the dimension.</DD>
+<DT><CODE><I>type</I></CODE></DT><DD>Type name of the other layer.</DD>
+<DT><CODE>z</CODE></DT><DD>Pointer to the other layer.</DD>
+<DT><CODE>c</CODE></DT><DD>Zero-based integer coordinate (along this dimension) of the cell in layer <CODE>z</CODE>.</DD>
+</DL></BLOCKQUOTE>
+Note: <A HREF="cns_center.html"><CODE>cns_center</CODE></A> is the equivalent MATLAB function.
+</TD></TR><TR><TD><PRE>
+GET_<I>type</I>_<I>dim</I>_RF_NEAR_AT(z, p, n, &v1, &v2)
+GET_<I>type</I>_<I>dim</I>_RF_DIST_AT(z, p, r, &v1, &v2)
+GET_<I>type</I>_<I>dim</I>_RF_NEAR_AT(z, p, n, &v1, &v2, &i1, &i2)
+GET_<I>type</I>_<I>dim</I>_RF_DIST_AT(z, p, r, &v1, &v2, &i1, &i2)
+</PRE></TD><TD VALIGN="top">
+These macros are the same as the <A HREF="#getrf">above</A> <CODE>GET_<I>type</I>_<I>dim</I>_RF...</CODE> macros, except they find cells near a specified point in common coordinate space (along the relevant dimension).  They take one additional parameter:
+<BLOCKQUOTE><DL>
+<DT><CODE>p</CODE></DT><DD>Position in common coordinate space, relative to which we are searching.  A floating point value expressed in the units of the common coordinate space.</DD>
+</DL></BLOCKQUOTE>
+Note: <A HREF="cns_getrfnearat.html"><CODE>cns_getrfnearat</CODE></A> and <A HREF="cns_getrfdistat.html"><CODE>cns_getrfdistat</CODE></A> are the equivalent MATLAB functions.
+</TD></TR></TABLE>
+
+<H4><A NAME="expmac">Connectivity: Explicit Synapses</A></H4>
+
+The following macros are used in packages where cells are connected via <A HREF="model.html#exsyn">explicitly-enumerated synapses</A>.<P>
+
+<TABLE BORDER="1"><TR><TD><B>Macro(s)</B></TD><TD><B>Description</B></TD></TR><TR><TD><PRE>
+NUM_SYN
+</PRE></TD><TD VALIGN="top">
+The number of explicit synapses this cell has.  An integer.
+</TD></TR><TR><TD><PRE>
+<A NAME="selsyn"></A>SELECT_SYN(e)
+</PRE></TD><TD VALIGN="top">
+Makes a particular synapse "active", which means that all macros that reference <A HREF="#readpre">fields of presynaptic cells</A> or <A HREF="#synmac">synapse fields</A> will refer to this synapse (until the next <CODE>SELECT_SYN</CODE> call).
+<BLOCKQUOTE><DL>
+<DT><CODE>e</CODE></DT><DD>Zero-based integer index that identifies the particular explicit synapse within this cell.  Must be between <CODE>0</CODE> and <CODE>(NUM_SYN - 1)</CODE>.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+SYN_Z
+</PRE></TD><TD VALIGN="top">
+Returns a pointer to the layer in which the currently active presynaptic cell (as determined by <A HREF="#selsyn"><CODE>SELECT_SYN</CODE></A>) resides.  Not required if you only want to read <A HREF="#readpre">fields of presynaptic cells</A> or <A HREF="#synmac">synapse fields</A>, but useful if you want to read other information from the presynaptic layer (using macros in <A HREF="#gridmac">this</A> section).
+</TD></TR><TR><TD><PRE>
+SYN_<I>dim</I>
+</PRE></TD><TD VALIGN="top">
+Returns the zero-based integer coordinate (along a particular dimension) of the currently active presynaptic cell in its layer.  Not required if you only want to read <A HREF="#readpre">fields of presynaptic cells</A> or <A HREF="#synmac">synapse fields</A>, but useful if you want to read information from other cells in the presynaptic layer (using macros in <A HREF="#gridmac">this</A> section).
+<BLOCKQUOTE><DL>
+<DT><CODE><I>dim</I></CODE></DT><DD>Name of the dimension.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR></TABLE>
+
+<H4><A NAME="cmac">Parameter Fields</A></H4>
+
+<TABLE BORDER="1"><TR><TD><B>Macro(s)</B></TD><TD><B>Description</B></TD></TR><TR><TD><PRE>
+<I>field</I>
+<I>field</I>(e)
+<I>type</I>_<I>field</I>(z)
+<I>type</I>_<I>field</I>(z, e)
+</PRE></TD><TD VALIGN="top">
+Return the value of a <A HREF="#cfield">parameter field</A> defined for (a) the model as a whole, (b) this layer, or (c) another layer.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the parameter field.</DD>
+<DT><CODE>e</CODE></DT><DD>The zero-based element number, if the parameter field is multivalued.</DD>
+<DT><CODE><I>type</I></CODE></DT><DD>Type name of the other layer.</DD>
+<DT><CODE>z</CODE></DT><DD>Pointer to the other layer.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+NUM_<I>field</I>
+NUM_<I>type</I>_<I>field</I>(z)
+</PRE></TD><TD VALIGN="top">
+The number of values in a multivalued <A HREF="#cfield">parameter field</A>.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the multivalued parameter field.</DD>
+<DT><CODE><I>type</I></CODE></DT><DD>Type name of another layer.</DD>
+<DT><CODE>z</CODE></DT><DD>Pointer to the other layer.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR></TABLE>
+
+<H4><A NAME="cvmac">Cell Fields</A></H4>
+
+<TABLE BORDER="1"><TR><TD><B>Macro(s)</B></TD><TD><B>Description</B></TD></TR><TR><TD><PRE>
+READ_<I>field</I>
+READ_<I>field</I>(e)
+</PRE></TD><TD VALIGN="top">
+Return the value of a <A HREF="#cvfield">cell field</A> (for this cell).
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the cell field.</DD>
+<DT><CODE>e</CODE></DT><DD>The zero-based element number, if the field is multivalued.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+WRITE_<I>field</I>(v)
+WRITE_<I>field</I>(e, v)
+</PRE></TD><TD VALIGN="top">
+Update the value of a <A HREF="#cvfield">cell variable</A> (for this cell).
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the cell variable.</DD>
+<DT><CODE>v</CODE></DT><DD>New value for the variable.</DD>
+<DT><CODE>e</CODE></DT><DD>The zero-based element number to update, if the variable is multivalued.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+NUM_<I>field</I>
+</PRE></TD><TD VALIGN="top">
+The number of values in a multivalued <A HREF="#cvfield">cell field</A>.  Note that this number will be the same for all the cells in a layer.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the multivalued cell field.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+READ_<I>type</I>_<I>field</I>(z, c1, c2, ...)
+<A NAME="readpre"></A>READ_PRE_<I>field</I>
+</PRE></TD><TD VALIGN="top">
+Return the value of a <I>public</I> <A HREF="#cvfield">cell field</A> for an arbitrary cell, or for the <A HREF="#selsyn">currently selected</A> presynaptic cell.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>type</I></CODE></DT><DD>Type name of the layer containing the cell.</DD>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the public cell field.</DD>
+<DT><CODE>z</CODE></DT><DD>Pointer to the layer containing the cell.</DD>
+<DT><CODE>c1, c2, ...</CODE></DT><DD>Zero-based integer coordinates of the cell in layer <CODE>z</CODE> (one coordinate per <A HREF="#dims">dimension</A>).</DD>
+</DL></BLOCKQUOTE>
+<B>Note: the <CODE>READ_<I>type</I>_<I>field</I></CODE> macro is often used inside loops which can benefit from optimization.  See <A HREF="#cvopt">this section</A> for faster alternatives.</B>
+</TD></TR></TABLE>
+
+<H4><A NAME="synmac">Synapse Fields</A></H4>
+
+<TABLE BORDER="1"><TR><TD><B>Macro(s)</B></TD><TD><B>Description</B></TD></TR><TR><TD><PRE>
+SYN_TYPE
+</PRE></TD><TD VALIGN="top">
+Return the <A HREF="model.html#exsyn">synapse type</A> of the <A HREF="#selsyn">currently selected</A> synapse.
+</TD></TR><TR><TD><PRE>
+READ_<I>field</I>
+READ_<I>field</I>(e)
+</PRE></TD><TD VALIGN="top">
+Return the value of a <A HREF="#sfield">synapse field</A> for the <A HREF="#selsyn">currently selected</A> synapse.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the synapse field.</DD>
+<DT><CODE>e</CODE></DT><DD>The zero-based element number, if the field is multivalued.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+WRITE_<I>field</I>(v)
+WRITE_<I>field</I>(e, v)
+</PRE></TD><TD VALIGN="top">
+Update the value of a <A HREF="#sfield">synapse variable</A> for the <A HREF="#selsyn">currently selected</A> synapse.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the synapse variable.</DD>
+<DT><CODE>v</CODE></DT><DD>New value for the variable.</DD>
+<DT><CODE>e</CODE></DT><DD>The zero-based element number to update, if the variable is multivalued.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+NUM_<I>field</I>
+</PRE></TD><TD VALIGN="top">
+The number of values in a multivalued <A HREF="#sfield">synapse field</A>.  Note that this number will be the same for all synapses of all the cells in a layer.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the multivalued synapse field.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR></TABLE>
+
+<H4><A NAME="amac">N-D Array Fields</A></H4>
+
+<TABLE BORDER="1"><TR><TD><B>Macro(s)</B></TD><TD><B>Description</B></TD></TR><TR><TD><PRE>
+<I>field</I>_<I>dim</I>_SIZE
+<I>field</I>_<I>dim</I>_SIZE(e)
+<I>type</I>_<I>field</I>_<I>dim</I>_SIZE(z)
+<I>type</I>_<I>field</I>_<I>dim</I>_SIZE(z, e)
+</PRE></TD><TD VALIGN="top">
+Return the number of cells along a particular <A HREF="#dims">dimension</A> of an <A HREF="#afield">N-D array field</A> belonging to (a) the model as a whole, (b) this layer, or (c) another layer.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the N-D array field.</DD>
+<DT><CODE><I>dim</I></CODE></DT><DD>Name of the dimension.</DD>
+<DT><CODE>e</CODE></DT><DD>The zero-based element number, if the field holds multiple N-D arrays.</DD>
+<DT><CODE><I>type</I></CODE></DT><DD>Type name of the other layer.</DD>
+<DT><CODE>z</CODE></DT><DD>Pointer to the other layer.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+READ_<I>field</I>(c1, c2, ...)
+READ_<I>field</I>(e, c1, c2, ...)
+READ_<I>type</I>_<I>field</I>(z, c1, c2, ...)
+READ_<I>type</I>_<I>field</I>(z, e, c1, c2, ...)
+</PRE></TD><TD VALIGN="top">
+Return a value from an <A HREF="#afield">N-D array field</A>.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the N-D array field.</DD>
+<DT><CODE>c1, c2, ...</CODE></DT><DD>Zero-based integer coordinates within the array (one coordinate for each dimension of the array).</DD>
+<DT><CODE>e</CODE></DT><DD>The zero-based element number, if the field holds multiple N-D arrays.</DD>
+<DT><CODE><I>type</I></CODE></DT><DD>Type name of another layer.</DD>
+<DT><CODE>z</CODE></DT><DD>Pointer to the other layer.</DD>
+</DL></BLOCKQUOTE>
+<B>Note: these macros are often used inside loops which can benefit from optimization.  See <A HREF="#aopt">this section</A> for faster alternatives.</B>
+</TD></TR><TR><TD><PRE>
+NUM_<I>field</I>
+NUM_<I>type</I>_<I>field</I>(z)
+</PRE></TD><TD VALIGN="top">
+Return the number of N-D arrays held in a multivalued <A HREF="#afield">N-D array field</A>.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the N-D array field.</DD>
+<DT><CODE><I>type</I></CODE></DT><DD>Type name of another layer.</DD>
+<DT><CODE>z</CODE></DT><DD>Pointer to the other layer.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR></TABLE>
+
+<H4><A NAME="constmac">Compile-Time Constants</A></H4>
+
+CNS also creates macros for every <A HREF="#const">compile-time constant</A> a kernel has access to: those defined at the package level, in a supertype, or for the type itself.<P>
+
+The macro names are just UPPER case versions of the constant names.  For example, a compile-time constant called "spk_dur" will be accessible using macro <CODE>SPK_DUR</CODE>.
+
+<H4><A NAME="cvopt">Optimization: Public Cell Fields</A></H4>
+
+It is common to have kernels that read the values of many cells of the same layer inside a loop, using the <A HREF="#cvmac"><CODE>READ_<I>type</I>_<I>field</I></CODE></A> macro.  CNS provides two somewhat faster sets of macros for doing this.<P>
+
+The first set of macros introduces the concept of a <I>handle</I>.  In your code, instead of this:
+<BLOCKQUOTE><PRE>
+for (...) {
+    ...
+    float v = READ_<I>type</I>_<I>field</I>(z, c1, c2, ...);
+    ...
+}
+</PRE></BLOCKQUOTE>
+you would do this:
+<BLOCKQUOTE><PRE>
+<FONT COLOR="red">[<I>type</I>_]<I>field</I>_HANDLE h = GET_<I>type</I>_<I>field</I>_HANDLE(z);</FONT>
+...
+for (...) {
+    ...
+    float v = <FONT COLOR="red">READ_[<I>type</I>_]<I>field</I>_HANDLE</FONT>(<FONT COLOR="red">h</FONT>, c1, c2, ...);
+    ...
+}
+</PRE></BLOCKQUOTE>
+
+Internally, the handle points to the block of memory that contains that <CODE><I>field</I></CODE> of layer <CODE>z</CODE> (for all cells).  This saves having to find that address for each loop iteration.  Once you have the handle, you can use handle-based macros in place of macros that take <CODE>z</CODE>.<P>
+
+<TABLE BORDER="1"><TR><TD><B>Macro(s)</B></TD><TD><B>Description</B></TD></TR><TR><TD><PRE>
+<A NAME="cvhand"></A>[<I>type</I>_]<I>field</I>_HANDLE
+</PRE></TD><TD VALIGN="top">
+This is a C++ class that holds a handle (described above) to a public <A HREF="#cvfield">cell field</A> in a layer.  You get a handle using <A HREF="#getcvhand">this</A> macro.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the public cell field this class will hold handles to.</DD>
+<DT><CODE>[<I>type</I>_]</CODE></DT><DD>Type name in which the field is defined.  <I>Only present if the field is not defined in the current type (or a supertype).</I></DD>
+</DL></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+<A NAME="getcvhand"></A>GET_<I>type</I>_<I>field</I>_HANDLE(z)
+</PRE></TD><TD VALIGN="top">
+Returns a <A HREF="#cvhand">handle</A> to a public <A HREF="#cvfield">cell field</A> in a particular layer.  The handle can then be passed as a parameter to the macros below.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>type</I></CODE></DT><DD>Type name in which the public cell field is defined.</DD>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the field.</DD>
+<DT><CODE>z</CODE></DT><DD>Pointer to the layer.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+READ_[<I>type</I>_]<I>field</I>_HANDLE(h, c1, c2, ...)
+</PRE></TD><TD VALIGN="top">
+Returns the value of a public <A HREF="#cvfield">cell field</A> for a cell in a layer, using a <A HREF="#cvhand">handle</A>.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the public cell field.</DD>
+<DT><CODE>[<I>type</I>_]</CODE></DT><DD>Type name in which the field is defined.  <I>Only present if the field is not defined in the current type (or a supertype).</I></DD>
+<DT><CODE>h</CODE></DT><DD><A HREF="#cvhand">Handle</A> to that field in the layer.</DD>
+<DT><CODE>c1, c2, ...</CODE></DT><DD>Zero-based integer coordinates of the cell in its layer (one coordinate per <A HREF="#dims">dimension</A>).</DD>
+</DL></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+[<I>type</I>_]<I>field</I>_HANDLE_<I>dim</I>_SIZE(h)
+</PRE></TD><TD VALIGN="top">
+Returns the number of cells along a particular <A HREF="#dims">dimension</A> of the layer pointed to by a <A HREF="#cvhand">handle</A>.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the public <A HREF="#cvfield">cell field</A> pointed to by the handle.</DD>
+<DT><CODE>[<I>type</I>_]</CODE></DT><DD>Type name in which the field is defined.  <I>Only present if the field is not defined in the current type (or a supertype).</I></DD>
+<DT><CODE><I>dim</I></CODE></DT><DD>Name of the dimension.</DD>
+<DT><CODE>h</CODE></DT><DD>The <A HREF="#cvhand">handle</A>.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR></TABLE><P>
+
+The second set of macros makes a further optimization, but requires understanding <A HREF="#dims">how an N-D layer of cells is mapped internally to 2-D</A>.  Normally when reading the value of a cell's field, you have to provide a full set of N-D coordinates (c1, c2, ...) to identify the cell; CNS automatically converts these to 2-D coordinates and then performs the lookup.  The following macros let you work directly in the internal 2-D space.<P>
+
+<TABLE BORDER="1"><TR><TD><B>Macro(s)</B></TD><TD><B>Description</B></TD></TR><TR><TD><PRE>
+GET_<I>type</I>_<I>field</I>_IPOS(z, c1, c2, ..., &y, &x)
+</PRE></TD><TD VALIGN="top">
+TODO
+</TD></TR><TR><TD><PRE>
+GET_[<I>type</I>_]<I>field</I>_HANDLE_IPOS(h, c1, c2, ..., &y, &x)
+</PRE></TD><TD VALIGN="top">
+TODO
+</TD></TR><TR><TD><PRE>
+READ_[<I>type</I>_]<I>field</I>_IPOS(y, x)
+</PRE></TD><TD VALIGN="top">
+TODO
+</TD></TR></TABLE>
+
+<H4><A NAME="aopt">Optimization: N-D Array Fields</A></H4>
+
+The following optimization macros for reading from <A HREF="#afield">N-D array fields</A> are very similar in concept and syntax to those for reading the fields of cells in other layers, described <A HREF="#cvopt">above</A>.  See that section for an explanation of the concepts.<P>
+
+<TABLE BORDER="1"><TR><TD><B>Macro(s)</B></TD><TD><B>Description</B></TD></TR><TR><TD><PRE>
+<A NAME="ahand"></A>[<I>type</I>_]<I>field</I>_HANDLE
+</PRE></TD><TD VALIGN="top">
+This is a C++ class that holds a handle to an <A HREF="#afield">N-D array field</A>.  You get a handle using one of <A HREF="#getahand">these</A> macros.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the N-D array field this class will hold handles to.</DD>
+<DT><CODE>[<I>type</I>_]</CODE></DT><DD>Type name in which the field is defined.  <I>Only present if the field is not defined in the current type (or a supertype) or at the package level.</I></DD>
+</DL></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+<A NAME="getahand"></A>GET_<I>field</I>_HANDLE
+GET_<I>field</I>_HANDLE(e)
+GET_<I>type</I>_<I>field</I>_HANDLE(z)
+GET_<I>type</I>_<I>field</I>_HANDLE(z, e)
+</PRE></TD><TD VALIGN="top">
+Return a <A HREF="#ahand">handle</A> to an <A HREF="#afield">N-D array field</A> belonging to (a) the model as a whole, (b) this layer, or (c) another layer.  The handle can then be passed as a parameter to the macros below.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the N-D array field.</DD>
+<DT><CODE>e</CODE></DT><DD>The zero-based element number, if the field holds multiple N-D arrays.</DD>
+<DT><CODE><I>type</I></CODE></DT><DD>Type name of another layer.</DD>
+<DT><CODE>z</CODE></DT><DD>Pointer to the other layer.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+READ_[<I>type</I>_]<I>field</I>_HANDLE(h, c1, c2, ...)
+</PRE></TD><TD VALIGN="top">
+Returns a value from an <A HREF="#afield">N-D array field</A>, using a <A HREF="#ahand">handle</A>.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the N-D array field.</DD>
+<DT><CODE>[<I>type</I>_]</CODE></DT><DD>Type name in which the field is defined.  <I>Only present if the field is not defined in the current type (or a supertype) or at the package level.</I></DD>
+<DT><CODE>h</CODE></DT><DD><A HREF="#ahand">Handle</A> to the N-D array field.</DD>
+<DT><CODE>c1, c2, ...</CODE></DT><DD>Zero-based integer coordinates within the array that you want to read (one coordinate for each dimension of the array).</DD>
+</DL></BLOCKQUOTE>
+</TD></TR><TR><TD><PRE>
+[<I>type</I>_]<I>field</I>_HANDLE_<I>dim</I>_SIZE(h)
+</PRE></TD><TD VALIGN="top">
+Returns the size (along a particular dimension) of the N-D array field pointed to by a <A HREF="#ahand">handle</A>.
+<BLOCKQUOTE><DL>
+<DT><CODE><I>field</I></CODE></DT><DD>Name of the <A HREF="#afield">N-D array field</A> pointed to by the handle.</DD>
+<DT><CODE>[<I>type</I>_]</CODE></DT><DD>Type name in which the field is defined.  <I>Only present if the field is not defined in the current type (or a supertype) or at the package level.</I></DD>
+<DT><CODE><I>dim</I></CODE></DT><DD>Name of the dimension.</DD>
+<DT><CODE>h</CODE></DT><DD>The <A HREF="#ahand">handle</A>.</DD>
+</DL></BLOCKQUOTE>
+</TD></TR></TABLE><P>
+
+<TABLE BORDER="1"><TR><TD><B>Macro(s)</B></TD><TD><B>Description</B></TD></TR><TR><TD><PRE>
+GET_<I>field</I>_IPOS(c1, c2, ..., &y, &x)
+GET_<I>field</I>_IPOS(e, c1, c2, ..., &y, &x)
+GET_<I>type</I>_<I>field</I>_IPOS(z, c1, c2, ..., &y, &x)
+GET_<I>type</I>_<I>field</I>_IPOS(z, e, c1, c2, ..., &y, &x)
+</PRE></TD><TD VALIGN="top">
+For <I>cached</I> <A HREF="#afield">N-D array fields</A> only.  TODO
+</TD></TR><TR><TD><PRE>
+GET_[<I>type</I>_]<I>field</I>_HANDLE_IPOS(h, c1, c2, ..., &y, &x)
+</PRE></TD><TD VALIGN="top">
+TODO
+</TD></TR><TR><TD><PRE>
+READ_[<I>type</I>_]<I>field</I>_IPOS(y, x)
+</PRE></TD><TD VALIGN="top">
+For <I>cached</I> <A HREF="#afield">N-D array fields</A> only.  TODO
+</TD></TR><TR><TD><PRE>
+READ_[<I>type</I>_]<I>field</I>_IPOS(h, y, x)
+</PRE></TD><TD VALIGN="top">
+For <I>uncached</I> <A HREF="#afield">N-D array fields</A> only.  TODO
+</TD></TR></TABLE>
+
+<H3><A NAME="preproc">CNS Preprocessor Directives</A></H3>
+
+CNS has several special preprocessor directives that can be used in kernels.
+
+<H4><A NAME="temppre"><CODE>#PART</CODE> and <CODE>#INCLUDEPART</CODE></A></H4>
+
+These directives make it easy to create a number of similar kernels without duplicating code.  Consider the following example, in which we want to create two kernels, both of which run 2-D filters over a layer.  The only difference is in the particular mathematical function that is computed between a filter and the patch of the layer it overlays.  Using <CODE>#PART</CODE> and <CODE>#INCLUDEPART</CODE>, we specify the general form of the algorithm once, in an abstract supertype, with placeholders that get filled in by the subtypes.<P>
+
+Example (abstract) supertype kernel.  <CODE>#INCLUDEPART</CODE> lines are placeholders which will be replaced by code from subtypes:
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+int y1, y2, x1, x2;
+GET_LAYER_Y_RF_NEAR(PZ, FVALS_Y_SIZE, y1, y2);
+GET_LAYER_X_RF_NEAR(PZ, FVALS_X_SIZE, x1, x2);
+int f = THIS_F;
+
+float res = 0.0f;
+
+for (int j = 0, x = x1; x <= x2; j++, x++) {
+    for (int i = 0, y = y1; y <= y2; i++, y++) {
+
+        float v = READ_LAYER_VAL(PZ, 0, y, x);
+        float w = READ_FVALS(i, j, f);
+
+        <FONT COLOR="red">#INCLUDEPART update</FONT>
+
+    }
+}
+
+<FONT COLOR="red">#INCLUDEPART done</FONT>
+
+WRITE_VAL(res);
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+
+Example subtype kernel #1 (convolution).  Here, <CODE>#PART</CODE> is used to identify code used to fill in each placeholder.
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+<FONT COLOR="red">#PART update</FONT>
+
+    res += w * v;
+
+<FONT COLOR="red">#PART done</FONT>
+
+    // Nothing.
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+
+Example subtype kernel #2 (distance):
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+<FONT COLOR="red">#PART update</FONT>
+
+    float diff = w - v;
+    res += diff * diff;
+
+<FONT COLOR="red">#PART done</FONT>
+
+    res = sqrtf(res);
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+
+These directives can be used recursively: a <CODE>#PART</CODE> section can itself contain <CODE>#INCLUDEPART</CODE> lines which will insert code from a yet more specific subtype.
+
+<H4><A NAME="unroll">Loop Unrolling</A></H4>
+
+CNS provides a smart <A HREF="http://en.wikipedia.org/wiki/Loop_unwinding">loop unrolling</A> mechanism that is useful for speeding up tight inner loops.  It is "smart" in that the unrolling will not affect program correctness if, at runtime, you need a number of iterations that is not an integer multiple of the unroll factor.<P>
+
+To use loop unrolling, replace your C++ <CODE>for</CODE> statement with one of these <CODE>#UNROLL_START</CODE> directives:
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+#UNROLL_START <I>factor</I>
+#UNROLL_START <I>factor symbol</I>
+#UNROLL_START <I>factor symbol upper</I>
+#UNROLL_START <I>factor symbol lower upper</I>
+#UNROLL_START <I>factor symbol lower cond upper</I>
+</PRE></TD><TD VALIGN="top">
+This is semantically equivalent to the following <CODE>for</CODE> line:
+<BLOCKQUOTE><PRE>
+for (symbol = lower; symbol cond upper; symbol++) {
+</PRE></BLOCKQUOTE>
+<DL>
+<DT><CODE><I>factor</I></CODE></DT><DD>The unroll factor, i.e. the number of iterations that the preprocessor will group into a single iteration.</DD>
+<DT><CODE><I>symbol</I></CODE></DT><DD>A symbol within the body of the loop that will be replaced by the value of the loop counter.  Make sure it is a distinctive string of characters that isn't a substring of other identifiers inside the loop.  For example, use <CODE>%i%</CODE> rather than just <CODE>i</CODE>.</DD>
+</DL>
+Note: if none of the following parameters are given, the loop will always execute exactly <CODE><I>factor</I></CODE> times.
+<DL>
+<DT><CODE><I>lower</I></CODE></DT><DD>The starting value of the loop counter.  Can be a constant or the name of a local C++ variable.  Defaults to <CODE>0</CODE>.</DD>
+<DT><CODE><I>cond</I></CODE></DT><DD>Either <CODE><</CODE> or <CODE><=</CODE>.  Defaults to <CODE><</CODE>.</DD>
+<DT><CODE><I>upper</I></CODE></DT><DD>The upper bound of the loop counter.  Can be a constant or the name of a local C++ variable.</DD>
+</DL>
+</TD></TR></TABLE></BLOCKQUOTE>
+
+You must also replace the closing <CODE>}</CODE> of the <CODE>for</CODE> loop with the directive <CODE>#UNROLL_END</CODE>, and replace any <CODE>break</CODE> statements with <CODE>#UNROLL_BREAK</CODE>.  Both these directives must appear on their own lines.
+
+<H3><A NAME="locarray">Fast Local Array Variables</A></H3>
+
+When you declare a local (C++) variable in a kernel, the CUDA compiler usually assigns it to a <I>register</I>, which is fast.  However, local variables that are arrays usually get assigned to global GPU memory, which is much slower.  CNS provides a way to declare small local fixed-size arrays that get stored in <I>shared memory</I>, which is as fast as registers.  (Note that while they reside "shared" memory, this is only for speed reasons.  They have the same scope as other local variables, i.e., they are temporary variables that exist only for the duration of a single cell's kernel call.)<P>
+
+Fast local arrays are declared in the <A HREF="#mdef">same place</A> as a cell type's fields.<P>
+
+Here are some example local array definitions:
+
+<BLOCKQUOTE><PRE>
+d.gcond = {'a', 10};          <FONT COLOR="green">// A 10-element array of floats.</FONT>
+d.syn_t = {'a', 5, 'int'};    <FONT COLOR="green">// A 5-element array of ints.</FONT>
+d.xyz   = {'a', 8, 'double'}; <FONT COLOR="green">// An 8-element array of doubles.</FONT>
+</PRE></BLOCKQUOTE>
+
+Within kernels you access array elements using macro syntax.  For example:
+
+<BLOCKQUOTE><PRE>
+<FONT COLOR="red">GCOND</FONT>(3) = 3.6f;
+float gc = <FONT COLOR="red">GCOND</FONT>(0);
+for (int i = 0; i < 5; i++) <FONT COLOR="red">SYN_T</FONT>(i) = 0;
+...
+</PRE></BLOCKQUOTE>
+
+Note that the size of shared memory is limited (to 16KB in current GPUs), and using a lot of arrays will mean you have to make the cell type's <A HREF="#prop">block size</A> smaller.
+
+<H3><A NAME="dsplit">Dimension Splitting</A></H3>
+
+As explained <A HREF="#dims">here</A>, CNS represents N-D structures (cell layers and <A HREF="#afield">array fields</A>) internally as 2-D inside the GPU, often using GPU textures.  However, current GPUs limit texture sizes to 65536 x 32768.  If one of your dimensions is very large, this may cause problems.<P>
+
+For example, suppose we want to define a 3-D layer type which is going to have two spatial dimensions (y and x) and a feature dimension (f):
+
+<BLOCKQUOTE><PRE>
+p.dnames = {'f' 'y' 'x'};
+p.dims   = {1 1 2};
+p.dparts = {2 1 2};
+</PRE></BLOCKQUOTE>
+
+Note that both f and y are assigned to internal dimension 1.  If the maximum layer size along y is going to be 400, this would limit us to 163 features.  The solution to this is a CNS feature called <I>dimension splitting</I>.  We can use this alternate dimensionality definition:
+
+<BLOCKQUOTE><PRE>
+p.dnames = {'f' 'y' 'x'};
+p.dims   = {<FONT COLOR="red">[1 2]</FONT> 1 2};
+p.dparts = {<FONT COLOR="red">[2 2]</FONT> 1 2};
+</PRE></BLOCKQUOTE>
+
+Now the f dimension is <I>split</I> across internal dimensions 1 and 2.  From MATLAB, we will still refer to it as a single dimension, but inside the GPU, it will be considered two dimensions, F0 and F1.  This affects:
+
+<UL>
+<LI>Macro names containing the dimension name, e.g., <CODE><I>dim</I>_SIZE</CODE>.  There will now be two of these, one for F0 and one for F1.<P>
+<LI>Macros that take an N-D list of coordinates, e.g., <CODE>READ_<I>type</I>_<I>field</I>(z, c1, c2, ...)</CODE>.  There will now be an additional argument.
+</UL>
+
+Since macros change, splitting dimensions affects how you write kernels.  However, it need not have any effect outside kernels.  When you actually <A HREF="model.html#build">create a network model</A>, you have two options:
+
+<UL>
+<LI><I>Easy:</I> just give the total size of every dimension and let CNS decide how to factor any split dimensions.  (The algorithm is in <A HREF="cns_splitdim.html"<CODE>cns_splitdim</CODE></A>.)  You only have to ensure that the dimension sizes you use are factorable.<P>
+<LI><I>Less easy:</I> "manually" specify how dimensions are to be split.  This is done for a layer by setting its <CODE>size</CODE> property as in this example:
+<BLOCKQUOTE><PRE>
+m.layers{6}.size = {[100 50] 400 400};
+</PRE></BLOCKQUOTE>
+</UL>
+
+<H3><A NAME="helper">Helper Functions</A></H3>
+
+A cell type's compute kernel is the body of a single function.  If you want to have a library of auxiliary "helper" functions that can be called from different kernels, you can put these in the file <CODE><I>package</I>_cns.h</CODE>. in your <A HREF="#dir">package directory</A>.<P>
+
+Here is an example <CODE><I>package</I>_cns.h</CODE> file that contains two helper functions:
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+INLINE float Sigmoid(float x) {
+    return 1.0f / (1.0f + expf(-x));
+}
+
+INLINE float DSigmoid(float y) {
+    return y * (1.0f - y);
+}
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+
+Each function definition must start with the word <CODE>INLINE</CODE>.
+
+<H3><A NAME="mem">Checking Kernel Memory Usage</A></H3>
+
+Once you have written a kernel, you may want to check to see how efficiently it compiles for the GPU.  The <A HREF="cns_build.html"><CODE>cns_build</CODE></A> function has an <CODE>info</CODE> option that displays some useful information, such as:
+
+<UL>
+<LI>Number of registers used (less is better).
+<LI>Number of local variables that would not fit into registers (preferably none).
+</UL>
+
+See the <A HREF="cns_build.html"><CODE>cns_build</CODE></A> function for details.
+
+</BODY>
+</HTML>

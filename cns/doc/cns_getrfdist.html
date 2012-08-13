@@ -1,0 +1,55 @@
+<HTML>
+<HEAD>
+<TITLE>cns_getrfdist</TITLE>
+</HEAD>
+<BODY>
+
+<H1><CODE>cns_getrfdist</CODE></H1>
+
+Finds a range of indices of other cells that are within a certain radius of a given cell in <A HREF="package.html#common">common coordinate space</A> along a particular <A HREF="package.html#dims">dimension</A>.
+
+<H2>Syntax</H2>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+[v1 v2]          = cns_getrfdist(m, z, dim, c, pz, r)
+[v1 v2 ok]       = cns_getrfdist(m, z, dim, c, pz, r)
+[v1 v2 c1 c2]    = cns_getrfdist(m, z, dim, c, pz, r)
+[v1 v2 c1 c2 ok] = cns_getrfdist(m, z, dim, c, pz, r)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>m</CODE></DT><DD>
+A <A HREF="model.html#build">model structure</A>.
+</DD><P>
+<DT><CODE>z</CODE></DT><DD>
+The layer number of the given cell.
+</DD><P>
+<DT><CODE>dim</CODE></DT><DD>
+The <A HREF="package.html#dims">dimension</A> name, or its number in layer <CODE>z</CODE>.
+</DD><P>
+<DT><CODE>c</CODE></DT><DD>
+Index (along this dimension) of the given cell in layer <CODE>z</CODE>.
+</DD><P>
+<DT><CODE>pz</CODE></DT><DD>
+Layer number in which we are searching for cells.
+</DD><P>
+<DT><CODE>r</CODE></DT><DD>
+The radius within which we are searching for cells.  Expressed in units of the common coordinate space along this dimension.  A floating point value.
+</DD><P>
+<DT><CODE>v1, v2</CODE></DT><DD>
+Range of indices of the found cells along this dimension in layer <CODE>pz</CODE>.  These are guaranteed to be valid indices, i.e., between 1 and the dimension size.  The range may be empty.
+</DD><P>
+<DT><CODE>c1, c2</CODE></DT><DD>
+These are the same as <CODE>v1</CODE> and <CODE>v2</CODE> except they are not guaranteed to be valid -- they can be less than 1 or greater than the dimension size.  (This usually happens close to an edge.)  Essentially, these are the <I>indices</I> that correspond to the search we performed, but they are not necessarily the indices of actual cells.
+</DD><P>
+<DT><CODE>ok</CODE></DT><DD>
+When only <CODE>v1</CODE> and <CODE>v2</CODE> are returned, <CODE>ok</CODE> is true iff <CODE>(v1 == c1)</CODE> and <CODE>(v2 == c2)</CODE>.  When both ranges are returned, <CODE>ok</CODE> is true iff the range (<CODE>v1</CODE> - <CODE>v2</CODE>) is not empty.
+</DD>
+</DL>
+
+<H2>Notes</H2>
+
+The equivalent kernel macro is <A HREF="package.html#gridmac"><CODE>GET_<I>type</I>_<I>dim</I>_RF_DIST</CODE></A>.
+
+</BODY>
+</HTML>

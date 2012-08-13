@@ -1,0 +1,30 @@
+<HTML>
+<HEAD>
+<TITLE>cns_getknownfields</TITLE>
+</HEAD>
+<BODY>
+
+<H1><CODE>cns_getknownfields</CODE></H1>
+
+Shows you which information in a <A HREF="model.html#build">model structure</A> is actually known to CNS -- as opposed to additional information that may have been stored there.
+
+<H2>Syntax</H2>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+[k, u] = cns_getknownfields(m)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>m</CODE></DT><DD>
+A <A HREF="model.html#build">model structure</A>.
+</DD><P>
+<DT><CODE>k</CODE></DT><DD>
+The same model structure but with any non-CNS information removed.
+</DD><P>
+<DT><CODE>u</CODE></DT><DD>
+Contains any information from <CODE>m</CODE> that was not known to CNS.
+</DD>
+</DL>
+
+</BODY>
+</HTML>

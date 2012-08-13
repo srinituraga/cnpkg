@@ -1,0 +1,596 @@
+<HTML>
+<HEAD>
+<TITLE>cns</TITLE>
+</HEAD>
+<BODY>
+
+<H1><CODE>cns</CODE></H1>
+
+The main function of the CNS framework.  All interaction between MATLAB and a network model on the GPU occurs via the <CODE>cns</CODE> function.  This includes initializing a model on a GPU, running it, getting and setting fields, etc.<P>
+
+<H3>Running One Model at a Time (Synchronously)</H3>
+
+We first describe how to run CNS in its simpler mode of operation, in which (for a given instance of MATLAB) there is only a single initialized model (a single <I>session</I>) active at a time.  In this mode, every call to the <CODE>cns</CODE> function causes MATLAB to wait until the operation is complete.  For ease of exposition in these sections, only the single-session, synchronous syntax is given for each command.
+
+<BLOCKQUOTE><TABLE>
+<TR><TD COLSPAN=2><B>Initializing and Deallocating</B></TD></TR>
+<TR><TD><A HREF="#init"><CODE>cns('init')</CODE></A></TD><TD>Initialize a network model on a GPU (or CPU).</TD></TR>
+<TR><TD><A HREF="#test"><CODE>cns('test')</CODE></A></TD><TD>Test initialization, displaying memory usage.</TD></TR>
+<TR><TD><A HREF="#platform"><CODE>cns('platform')</CODE></A></TD><TD>Change the defaults for some <CODE>'init'</CODE> parameters.</TD></TR>
+<TR><TD><A HREF="#done"><CODE>cns('done')</CODE></A></TD><TD>Deallocate model, freeing resources.</TD></TR>
+<TR><TD COLSPAN=2><BR><B>Getting and Setting Fields</B></TD></TR>
+<TR><TD><A HREF="#get"><CODE>cns('get')</CODE></A></TD><TD>Retrieve fields from an initialized model.</TD></TR>
+<TR><TD><A HREF="#update"><CODE>cns('update')</CODE></A></TD><TD>Retrieve all variables from an initialized model.</TD></TR>
+<TR><TD><A HREF="#set"><CODE>cns('set')</CODE></A></TD><TD>Change the value of fields in an initialized model.</TD></TR>
+<TR><TD COLSPAN=2><BR><B>Running the Model</B></TD></TR>
+<TR><TD><A HREF="#run"><CODE>cns('run')</CODE></A></TD><TD>Run an initialized model for some number of full iterations, possibly retrieving time series of some variables.</TD></TR>
+<TR><TD><A HREF="#step"><CODE>cns('step')</CODE></A></TD><TD>Run an initialized model through one or more steps of a single iteration, possibly retrieving some variables.</TD></TR>
+</TABLE></BLOCKQUOTE>
+
+<H3>Running One or More Models Asynchronously</H3>
+
+CNS also allows you to write MATLAB scripts that manage multiple CNS models running concurrently and asynchronously from the main MATLAB thread.  The most commmon reason to do this is to take advantage of a multi-GPU computer.  Another reason is to allow MATLAB to continue working while one or more models are executing on GPUs.
+
+<BLOCKQUOTE><TABLE>
+<TR><TD><A HREF="#async">General Remarks on Asynchronous Operation</A></TD></TR>
+<TR><TD><A HREF="#asyncex">Asynchronous Mode Syntax: a Multi-Session Example Script</A></TD></TR>
+<TR><TD><A HREF="#asyncinit">Initializing and Deallocating Sessions</A></TD></TR>
+<TR><TD><A HREF="#asyncrun">Running and Waiting</A></TD></TR>
+<TR><TD><A HREF="#asyncio">Input and Output</A></TD></TR>
+<TR><TD><A HREF="#asyncfunc">Other Useful Commands</A></TD></TR>
+</TABLE></BLOCKQUOTE>
+
+<HR>
+
+<H2><A NAME="init"><CODE>cns('init')</CODE></A></H2>
+
+Initializes a network model on a GPU (or CPU) using information provided in a <A HREF="model.html#build">model structure</A>.<P>
+
+<H3>Syntax</H3>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+cns('init', m)
+cns('init', m, platform)
+cns('init', m, platform, nice)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>m</CODE></DT><DD>
+The <A HREF="model.html#build">model structure</A>.
+</DD><P>
+<DT><CODE>platform</CODE></DT><DD>
+One of the following (defaults to <CODE>'gpu'</CODE>):
+<UL>
+<LI><CODE>'gpu'</CODE> - use the first available GPU (assuming <A HREF="install.html#prep">exclusive access</A> has been set up -- if not, this is the same as <CODE>'gpu0'</CODE>).
+<LI><CODE>'gpu#'</CODE> - use the specified GPU (<CODE>'gpu0'</CODE>, <CODE>'gpu1'</CODE>, etc.)
+<LI><CODE>'cpu'</CODE> - use the CPU.
+<LI><CODE>'debug'</CODE> - use the CPU in debug mode, which enables the <A HREF="package.html#genmac"><CODE>PRINT</CODE></A> and <A HREF="package.html#genmac"><CODE>ERROR</CODE></A> macros.
+</UL>
+</DD><P>
+<DT><CODE>nice</CODE></DT><DD>
+Applies when using a GPU.  One of the following (defaults to <CODE>'nice'</CODE>):
+<UL>
+<LI><CODE>'nice'</CODE> - yield CPU while waiting for the GPU.
+<LI><CODE>'mean'</CODE> - don't yield CPU while waiting for the GPU.
+</UL>
+</DD>
+</DL>
+
+<H3>Notes</H3>
+
+After calling <CODE>init</CODE>, you can call it again to re-initialize using a different model structure, <I>without</I> first calling <A HREF="#done"><CODE>done</CODE></A>, as long as the new model uses the same <A HREF="model.html#choose">package</A> and the <CODE>platform</CODE> and <CODE>nice</CODE> flag do not change.  Omitting the <CODE>done</CODE> call means you do not release the GPU, avoiding the possibility of it being claimed by another user.<P>
+
+The <A HREF="#platform"><CODE>platform</CODE></A> call can be used to change the default values of <CODE>platform</CODE> and <CODE>nice</CODE> so you do not have to provide values with every <CODE>init</CODE> call.<P>
+
+CPU mode is much slower than GPU mode, but is useful when you don't have access to a GPU, or want to use the <A HREF="package.html#genmac"><CODE>PRINT</CODE></A> and <A HREF="package.html#genmac"><CODE>ERROR</CODE></A> macros for debugging.<P>
+
+The <CODE>mean</CODE> option can be about 10% faster than <CODE>nice</CODE>, but it causes CPU usage to stay pinned at 100% even when the only processing is happening on the GPU, making the CPU unavailable to other processes.<P>
+
+Initialization sets the value of <A HREF="package.html#genmac"><CODE>ITER_NO</CODE></A> to 1.<P>
+
+<HR>
+
+<H2><A NAME="test"><CODE>cns('test')</CODE></A></H2>
+
+Performs a test initialization and prints a summary of memory usage, along with any errors.  This is useful for determining why an <CODE>init</CODE> call might be failing.
+
+<H3>Syntax</H3>
+
+Parameters are the same as for the <A HREF="#init"><CODE>init</CODE></A> call.
+
+<H3>Notes</H3>
+
+The <CODE>test</CODE> call <A HREF="#done">deallocates</A> the model immediately, whether the initialization succeeds or not.<P>
+
+<HR>
+
+<H2><A NAME="platform"><CODE>cns('platform')</CODE></A></H2>
+
+Allows you to change the default values of some parameters to the <A HREF="#init"><CODE>init</CODE></A> call so that you do not have to provide them in every <CODE>init</CODE> call.
+
+<H3>Syntax</H3>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+cns('platform', platform)
+cns('platform', platform, nice)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>platform, nice</CODE></DT><DD>
+These have the same meaning as in the <A HREF="#init"><CODE>init</CODE></A> call.
+</DD>
+</DL>
+
+<H3>Notes</H3>
+
+The settings you provide here become the defaults for the <CODE>init</CODE> call.  These defaults will persist until MATLAB exits.<P>
+
+<HR>
+
+<H2><A NAME="done"><CODE>cns('done')</CODE></A></H2>
+
+Deallocates an <A HREF="#init">initialized</A> model, freeing up GPU (or CPU) resources.
+
+<H3>Syntax</H3>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+cns('done')
+</PRE></TD></TR></TABLE><P>
+
+<HR>
+
+<H2><A NAME="get"><CODE>cns('get')</CODE></A></H2>
+
+Retrieves values from one or more <A HREF="package.html#field">fields</A> of an <A HREF="#init">initialized network model</A>.  Usually you will only do this after one or more <A HREF="#run">iterations</A> or <A HREF="#step">steps</A> have been executed.
+
+<H3>Syntax</H3>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+a = cns('get', <A HREF="#field"><I>field-params</I></A>)
+[a, a, ...] = cns('get', {<A HREF="#field"><I>field-params</I></A>}, {<A HREF="#field"><I>field-params</I></A>}, ...)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE><I>field-params</I></CODE></DT><DD>
+Identifies a field, or a subrange of a field, to retrieve (click <A HREF="#field">here</A> for details).  The number of these must match the number of outputs.  The {} can be omitted when only one field/subrange is requested.
+</DD><P>
+<DT><CODE>a</CODE></DT><DD>
+The value requested.  The number of these outputs must match the number of <CODE><I>field-params</I></CODE>.
+</DD>
+</DL>
+
+<HR>
+
+<H2><A NAME="update"><CODE>cns('update')</CODE></A></H2>
+
+Updates a <A HREF="model.html#build">model structure</A> with the current values of all variables in the <A HREF="#init">active model</A>.  This allows you to save the state of a running model.  If you then <A HREF="#done">deallocate</A> the model, you can use the updated model structure to <A HREF="#init">reactivate</A> it in the same state.
+
+<H3>Syntax</H3>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+m2 = cns('update', m1)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>m1</CODE></DT><DD>
+The original model structure.
+</DD><P>
+<DT><CODE>m2</CODE></DT><DD>
+The updated model structure.
+</DD>
+</DL>
+
+<H3>Notes</H3>
+
+In many situations, the updated model structure will be a lot larger than the one used to initialize the network in the first place.  Variables with default values will probably no longer be at those values, and even if they were, the <CODE>update</CODE> call would still store separate values for every cell and synapse in the updated model structure.<P>
+
+<HR>
+
+<H2><A NAME="set"><CODE>cns('set')</CODE></A></H2>
+
+Changes values in one or more <A HREF="package.html#field">fields</A> of an <A HREF="#init">initialized network model</A>.  Most commonly done to introduce new input data.
+
+<H3>Syntax</H3>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+cns('set', <A HREF="#field"><I>field-params</I></A>, a)
+cns('set', {<A HREF="#field"><I>field-params</I></A>, a}, {<A HREF="#field"><I>field-params</I></A>, a}, ...)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE><I>field-params</I></CODE></DT><DD>
+Identifies a field, or a subrange of a field, to set (click <A HREF="#field">here</A> for details).  The {} can be omitted when only one field/subrange is being set.
+</DD><P>
+<DT><CODE>a</CODE></DT><DD>
+The new value for the corresponding field/subrange.  Its size must match that of the field/subrange, or it can be a scalar, which sets the entire field/subrange to the same value.
+</DD>
+</DL>
+
+<HR>
+
+<H2><A NAME="run"><CODE>cns('run')</CODE></A></H2>
+
+Runs an <A HREF="#init">initialized model</A> for some number of full iterations.  Can also retrieve the values of variables at regular intervals as the model iterates.
+
+<H3>Syntax</H3>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+cns('run')
+cns('run', iterations)
+
+[s, s, ...] = cns('run', {<A HREF="#field"><I>field-params</I></A>}, {<A HREF="#field"><I>field-params</I></A>}, ...)
+[s, s, ...] = cns('run', iterations, {<A HREF="#field"><I>field-params</I></A>}, {<A HREF="#field"><I>field-params</I></A>}, ...)
+[s, s, ...] = cns('run', iterations, sampleRate, {<A HREF="#field"><I>field-params</I></A>}, {<A HREF="#field"><I>field-params</I></A>}, ...)
+[s, s, ...] = cns('run', iterations, sampleRate, bufferSize, {<A HREF="#field"><I>field-params</I></A>}, {<A HREF="#field"><I>field-params</I></A>}, ...)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>iterations</CODE></DT><DD>
+The number of full iterations of the model to perform.  Defaults to 1.
+</DD><P>
+<DT><CODE><I>field-params</I></CODE></DT><DD>
+Identifies a variable, or a subrange of a variable, to retrieve (click <A HREF="#field">here</A> for details).  The number of these must match the number of outputs.  By default, the variable/subrange will be retrieved at the end of each iteration; this can be changed by specifying <CODE>sampleRate</CODE>.
+</DD><P>
+<DT><CODE>s</CODE></DT><DD>
+The value requested.  The number of these outputs must match the number of <CODE><I>field-params</I></CODE>.  Because sampling may have occurred multiple times (depending on <CODE>iterations</CODE> and <CODE>sampleRate</CODE>), each output will have an additional dimension representing the sample number.  This will be dimension 1.<P>
+</DD><P>
+<DT><CODE>sampleRate</CODE></DT><DD>
+Number of iterations between each sampling of the requested variable(s).  Defaults to 1.
+</DD><P>
+<DT><CODE>bufferSize</CODE></DT><DD>
+By default, CNS attempts to collect all the outputs <CODE>[s, s, ...]</CODE> in GPU memory and transfer them back to MATLAB when the <CODE>run</CODE> call is complete.  This is fastest, but may require more GPU memory than is available.  Setting <CODE>bufferSize</CODE> to <CODE>n</CODE> means CNS will perform a GPU-MATLAB transfer whenever it has collected <CODE>n</CODE> samples (and any remaining samples will get transferred when the <CODE>run</CODE> call completes).
+</DD>
+</DL>
+
+<H3>Notes</H3>
+
+The <CODE>run</CODE> call automatically increments <A HREF="package.html#genmac"><CODE>ITER_NO</CODE></A> after every iteration.<P>
+
+<HR>
+
+<H2><A NAME="step"><CODE>cns('step')</CODE></A></H2>
+
+Runs an <A HREF="#init">initialized model</A> through one or more <A HREF="model.html#execorder">steps</A> of a single iteration.  Can optionally retrieve the values of some variables when done.</TD></TR>
+
+<H3>Syntax</H3>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+cns('step', step)
+
+[a, a, ...] = cns('step', step, {<A HREF="#field"><I>field-params</I></A>}, {<A HREF="#field"><I>field-params</I></A>}, ...)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>step</CODE></DT><DD>
+A single <A HREF="model.html#execorder">step number</A> to execute, or a two-element vector indicating a range of step numbers to execute.
+</DD><P>
+<DT><CODE><I>field-params</I></CODE></DT><DD>
+Identifies a variable, or a subrange of a variable, to retrieve when finished (click <A HREF="#field">here</A> for details).  The number of these must match the number of outputs.
+</DD><P>
+<DT><CODE>a</CODE></DT><DD>
+The value requested.  The number of these outputs must match the number of <CODE><I>field-params</I></CODE>.
+</DD>
+</DL>
+
+<H3>Notes</H3>
+
+The <CODE>step</CODE> call does not update <A HREF="package.html#genmac"><CODE>ITER_NO</CODE></A>, although you may do so yourself via a <A HREF="#set"><CODE>set</CODE></A> call.<P>
+
+<HR>
+
+<H2><A NAME="field">Field Parameters</A></H2>
+
+The <A HREF="#get"><CODE>get</CODE></A> and <A HREF="#set"><CODE>set</CODE></A> calls, and optionally the <A HREF="#run"><CODE>run</CODE></A> and <A HREF="#step"><CODE>step</CODE></A> calls, all involve identifying fields or subranges of fields.
+
+<H3>Entire Fields</H3>
+
+Identifying an <I>entire</I> field takes these two parameters.<P>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+z, field
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>z</CODE></DT><DD>
+The layer number, or <CODE>0</CODE> for a model-level field.
+</DD><P>
+<DT><CODE>field</CODE></DT><DD>
+The name of the field.
+</DD>
+</DL>
+
+<H3>Subranges</H3>
+
+For some field classes, you can optionally identify only a <I>subrange</I> to retrieve or set.  By "subrange" we mean:
+<UL>
+<LI>A single cell instead of an entire layer.
+<LI>Selected synapses of a synapse field.
+<LI>Selected values of a multivalued field.
+</UL>
+
+This is done using additional arguments, i.e.:<P>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+z, field, <I>additional-arguments</I>
+</PRE></TD></TR></TABLE><P>
+
+These are as follows:<P>
+
+<TABLE BORDER="1"><TR>
+<TD ROWSPAN="2"><B>Field Class</B></TD>
+<TD COLSPAN="2" ALIGN="center"><B>Optional Additional Arguments</B></TD>
+</TR><TR>
+<TD ALIGN="center"><B>Single-Valued</B></TD>
+<TD ALIGN="center"><B>Multivalued</B></TD>
+</TR><TR>
+<TD><A HREF="package.html#cfield">parameter</A></TD>
+<TD><I>none</I></TD>
+<TD><PRE>
+values
+</PRE></TD>
+</TR><TR>
+<TD><A HREF="package.html#afield">N-D array</A></TD>
+<TD><PRE>
+c1, c2, ...
+</PRE></TD>
+<TD><PRE>
+<I>value</I>
+<I>value</I>, c1, c2, ...
+</PRE></TD>
+</TR><TR>
+<TD><A HREF="package.html#cvfield">cell field</A></TD>
+<TD><PRE>
+c1, c2, ...
+</PRE></TD>
+<TD><PRE>
+values
+values, c1, c2, ...
+</PRE></TD>
+</TR><TR>
+<TD><A HREF="package.html#sfield">synapse field</A></TD>
+<TD><PRE>
+synapses
+synapses, c1, c2, ...
+</PRE></TD>
+<TD><PRE>
+values
+values, synapses
+values, synapses, c1, c2, ...
+</PRE></TD>
+</TR><TR>
+<TD><A HREF="package.html#genmac">ITER_NO</A></TD>
+<TD><I>none</I></TD>
+<TD><I>n/a</I></TD>
+</TR></TABLE><P>
+
+<DL>
+<DT><CODE>values</CODE></DT><DD>
+Identifies certain values of a multivalued field.  A scalar number indicates one value, a two-element vector indicates a range of values, and [] indicates all values.  Defaults to [].
+</DD><P>
+<DT><CODE><I>value</I></CODE></DT><DD>
+For multivalued N-D array fields.  Identifies one particular value.  (Note: this parameter is actually required.)
+</DD><P>
+<DT><CODE>synapses</CODE></DT><DD>
+For synapse fields.  Identifies certain synapses.  A scalar number indicates one synapse, a two-element vector indicates a range of synapses, and [] indicates all synapses.  Defaults to [].
+</DD><P>
+<DT><CODE>c1, c2, ...</CODE></DT><DD>
+For cell and synapse fields, identifies a particular cell in layer <CODE>z</CODE> using from 1 to N indices, where N is the <A HREF="package.html#dims">dimensionality</A> of layer <CODE>z</CODE>.  (See <A HREF="cns_iconv.html"><CODE>cns_iconv</CODE></A> for an explanation of using less than N indices.)  If no indices are provided, defaults to the entire layer.<P>
+For N-D array fields, identifies a particular element using from 1 to N indices, where N is the dimensionality of the array.  If no indices are provided, defaults to the entire array.
+</DD>
+</DL>
+
+<HR>
+
+<H2><A NAME="async">General Remarks on Asynchronous Operation</A></H2>
+
+It is increasingly common for a single computer to have more than one GPU.  Since communication between the host and GPU (or between two different GPUs) is much slower than the internal memory bandwidth inside a single GPU, CNS cannot <I>automatically</I> decompose a single large model into parts that run on multiple GPUs.  However, CNS does allow you to initialize and run <I>multiple</I> models simultaneously, from a single instance of MATLAB, as long as each model runs on a single GPU (on the same computer).  This allows you to (manually) decompose models that are too large to run in one GPU into multiple smaller models -- as long as you are prepared to write the MATLAB code that manages communication between the parts.  Asynchronous operation also allows you to instantiate the <I>same</I> model on multiple GPUs to increase overall throughput (this case is illustrated in the next section).<P>
+
+Even in single-GPU systems, asynchronous operation can help maximize use of computing resources by allowing a MATLAB script to perform (CPU-based) processing while a model is executing on the GPU.<P>
+
+<FONT COLOR="red"><U>Note 1</U>: this functionality is currently only available under Linux or Mac OS.  Your compiler must have the <CODE>&lt;pthread.h&gt;</CODE> library.</FONT><P>
+
+<FONT COLOR="red"><U>Note 2</U>: concurrency involving multiple computers is outside the scope of CNS, but since CNS is called just like any other MATLAB program, it will be compatible with any multi-computer concurrency solution that can run MATLAB jobs.</FONT><P>
+
+To run one or more models asynchronously, one writes a MATLAB script that:
+<UL>
+<LI>initializes the models,
+<LI>starts them all running asynchronously, and
+<LI>executes a loop in which MATLAB waits for one of the models to complete, at which time further actions may be taken.
+</UL>
+
+This "run asynchronously and wait" model was chosen for compatibility with MATLAB's fundamentally single-threaded programming model, in which strategies like asynchronous callbacks are not allowed.  An example script is shown below.<P>
+
+<HR>
+
+<H2><A NAME="asyncex">Asynchronous Mode Syntax: a Multi-Session Example Script</A></H2>
+
+This script uses CNS in asynchronous mode to process images through a model using all available GPUs.  Note that in this example, each GPU will be running the exact same model, but this is not required in general.<P>
+
+Most <CODE>cns</CODE> commands are the same as in the synchronous case, but with the addition of a <I>session ID</I> to identify which concurrently running session is being referred to.  The session ID variable is shown in <CODE><FONT COLOR="red">red</FONT></CODE> below.  When given as input, the session ID is always the second argument to the <CODE>cns</CODE> function, right after the command name (<CODE>'run'</CODE>, <CODE>'get'</CODE>, etc.)  There are also a few new commands (e.g. the <CODE>'wait'</CODE> command) that only work with session IDs.
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+m     = ...; <FONT COLOR="green">% a <A HREF="model.html#build">model structure</A></FONT>
+z_in  = ...; <FONT COLOR="green">% number of the model's input layer</FONT>
+z_out = ...; <FONT COLOR="green">% number of the model's output layer</FONT>
+paths = ...; <FONT COLOR="green">% a cell array of image paths</FONT>
+
+<FONT COLOR="green">% Create one session per GPU.  Initially none of them will be running.</FONT>
+<FONT COLOR="green">% Note we are assuming the GPUs have been configured for <A HREF="install.html#prep">exclusive access</A>.</FONT>
+for i = 1 : cns('devcount')
+    <FONT COLOR="red">sid</FONT> = cns('init', cns_newsession, m); <FONT COLOR="green">% Initialize a new session and get its session ID.</FONT>
+    cns('set', <FONT COLOR="red">sid</FONT>, '$imno', 0);          <FONT COLOR="green">% Create <A HREF="#asyncfunc">session property</A> '$imno' and set it to 0.</FONT>
+end
+
+next_imno = 1;
+while true
+
+    <FONT COLOR="green">% Read the next image.  If this is not the first time through the loop, this can happen</FONT>
+    <FONT COLOR="green">% while earlier images are still being processed.</FONT>
+    if next_imno <= numel(paths)
+        im = imread(paths{next_imno});
+    end
+
+    <FONT COLOR="green">% Wait for any session to finish processing the image it's currently working on.  If</FONT>
+    <FONT COLOR="green">% we're just starting, all sessions will be waiting and the one with the lowest session</FONT>
+    <FONT COLOR="green">% ID will be chosen.  When we've run out of images, code below will start closing the</FONT>
+    <FONT COLOR="green">% sessions.  When there are no more open sessions, we're done.</FONT>
+    <FONT COLOR="red">sid</FONT> = cns('wait', 'any');
+    if isempty(<FONT COLOR="red">sid</FONT>), break; end
+
+    <FONT COLOR="green">% Retrieve the image number the session was working on (stored in the '$imno' property).</FONT>
+    imno = cns('get', <FONT COLOR="red">sid</FONT>, '$imno');
+    if imno > 0
+        out = cns('get', <FONT COLOR="red">sid</FONT>, z_out, 'val'); <FONT COLOR="green">% Retrieve the output.</FONT>
+        ...                                  <FONT COLOR="green">% Do something useful with the output here.</FONT>
+    end
+
+    <FONT COLOR="green">% If there are still images left to process, load the next one into the waiting session</FONT>
+    <FONT COLOR="green">% and start it running again.  Otherwise, close the session.</FONT>
+    if next_imno <= numel(paths)
+        cns('set', <FONT COLOR="red">sid</FONT>, z_in, 'val', im);    <FONT COLOR="green">% Load the input image.</FONT>
+        cns('set', <FONT COLOR="red">sid</FONT>, '$imno', next_imno); <FONT COLOR="green">% Remember the image number.</FONT>
+        cns('run', <FONT COLOR="red">sid</FONT>);                     <FONT COLOR="green">% Process the image (asynchronously).</FONT>
+        next_imno = next_imno + 1;
+    else
+        cns('done', <FONT COLOR="red">sid</FONT>);
+    end
+
+end
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+
+The following sections discuss asynchronous mode <CODE>cns</CODE> commands in more detail.<P>
+
+<HR>
+
+<H2><A NAME="asyncinit">Asynchronous Mode: Initializing and Deallocating Sessions</A></H2>
+
+In asynchronous mode, a session is initialized (or reinitialized) using one of these variations on the basic <A HREF="#init"><CODE>cns('init')</CODE></A> command:
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+<FONT COLOR="red">sid</FONT> = cns('init', cns_newsession, m, ...)
+
+<FONT COLOR="red">sid</FONT> = cns('init', <FONT COLOR="red">sid</FONT>, m, ...)
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+
+The first version creates a new session and returns the session ID.  The second version is used to re-initialize an existing session with a new model structure.  Other arguments (not shown here) are identical to those in the basic <A HREF="#init"><CODE>cns('init')</CODE></A> command.  Note that setting <A HREF="install.html#prep">exclusive access</A> can be very helpful when working with multiple sessions.<P>
+
+The <A HREF="cns_newsession.html"><CODE>cns_newsession</CODE></A> function can be used to preallocate an array of session IDs, like this:
+<BLOCKQUOTE><PRE>
+<FONT COLOR="red">sids</FONT> = cns_newsession(1, 4);
+for i = 1 : 4
+    <FONT COLOR="red">sids</FONT>(i) = cns('init', cns_newsession, m, ...);
+end
+</PRE></BLOCKQUOTE>
+
+Sessions can be closed using the following commands:
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+cns('done', <FONT COLOR="red">sids</FONT>)
+cns('done', 'all')
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+
+Where:
+<UL>
+<LI><CODE><FONT COLOR="red">sids</FONT></CODE> is an array of zero or more session IDs
+<LI><CODE>'all'</CODE> means close all active sessions
+</UL>
+
+<HR>
+
+<H2><A NAME="asyncrun">Asynchronous Mode: Running and Waiting</A></H2>
+
+The asynchronous versions of <A HREF="#run"><CODE>cns('run')</CODE></A> and <A HREF="#step"><CODE>cns('step')</CODE></A> are:
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+cns('run', <FONT COLOR="red">sid</FONT>, ...)
+cns('step', <FONT COLOR="red">sid</FONT>, ...)
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+
+Aside from the session ID, all the arguments are the same as in the synchronous case, <B><I>except that there can be no output arguments</I></B>.  You can still request variables to be retrieved (i.e. you can still specify <A HREF="#field"><I>field-params</I></A>), but if you supply output arguments, then CNS will block your MATLAB script until the <CODE>'run'</CODE> or <CODE>'step'</CODE> call is complete -- i.e. the call will not be asynchronous.  If you want the call to return immediately so that your MATLAB script can move on to do something else while the <CODE>'run'</CODE> or <CODE>'step'</CODE> call executes, you have to omit the outputs arguments.  You can pick up any outputs later using a <A HREF="#asyncio"><CODE>cns('output')</CODE></A> call.<P>
+
+Once you have issued an asynchronous <CODE>'run'</CODE> or <CODE>'step'</CODE> call for a session, <B><I>making any other <CODE>cns</CODE> call for that session (for example, a <CODE>'get'</CODE> or <CODE>'set'</CODE> call) will implicitly cause MATLAB to stop and wait for the previous asynchronous call to complete.</I></B><P>
+
+Waiting can be <I>explicitly</I> controlled using the following commands, both of which block MATLAB until at least one of a list of sessions completes its work:
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+<FONT COLOR="red">sid</FONT> = cns('wait', <FONT COLOR="red">sids</FONT>)
+<FONT COLOR="red">sid</FONT> = cns('wait', 'any')
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+
+The first version waits for any of a list of sessions whose IDs you supply; the second waits for any active session.  The return value will be the ID of the first session of interest to complete.  (If <CODE><FONT COLOR="red">sids</FONT></CODE> is empty, or there are no active sessions, the return value will be empty.)<P>
+
+The following commands are similar, except that there is no waiting; these calls always return immediately:
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+<FONT COLOR="red">sid</FONT> = cns('poll', <FONT COLOR="red">sids</FONT>)
+<FONT COLOR="red">sid</FONT> = cns('poll', 'any')
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+
+Here, if any of the sessions of interest have completed, the return value will be one of their IDs; otherwise the return value will be empty.  It is an error to call this function with <CODE><FONT COLOR="red">sids</FONT></CODE> empty or with no active sessions.<P>
+
+<HR>
+
+<H2><A NAME="asyncio">Asynchronous Mode: Input and Output</A></H2>
+
+As mentioned above, there is one additional output command that applies to asynchronous mode.  It is used to retrieve any outputs requested by an asynchronous <A HREF="#asyncrun"><CODE>cns('run')</CODE></A> or <A HREF="#asyncrun"><CODE>cns('step')</CODE></A> command.
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+[s, s, ...] = cns('output', <FONT COLOR="red">sid</FONT>)
+[a, a, ...] = cns('output', <FONT COLOR="red">sid</FONT>)
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+
+The number of output parameters must match the number of outputs requested in the <CODE>'run'</CODE> or 'step'</CODE></A> call.<P>
+
+The other input/output commands (<CODE>'get'</CODE>, <CODE>'update'</CODE>, and <CODE>'set'</CODE>) all have identical syntax to their synchronous counterparts, except that the second argument is a session ID.  All these commands, and the <CODE>'output'</CODE> command, implicitly cause MATLAB to wait if the session is still executing.<P>
+
+<HR>
+
+<H2><A NAME="asyncfunc">Asynchronous Mode: Other Useful Commands</A></H2>
+
+When working asynchronously with multiple sessions, you usually need to keep track of what you asked a given session to do so that you can respond appropriately when it completes.  It's helpful to be able to 'tag' a session with some piece of data.  This is illustrated in the <A HREF="#asyncex">example above</A>, where we associate a <CODE>'$imno'</CODE> (image number) property with every session.  This information doesn't need to be propagated over to the GPU; it just needs to be available from within MATLAB.  Such 'session properties' can be set and retrieved as follows:
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+        cns('set', <FONT COLOR="red">sid</FONT>, propname, value)
+value = cns('get', <FONT COLOR="red">sid</FONT>, propname)
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+
+Here, <CODE>propname</CODE> must be a string starting with <CODE>'$'</CODE>, such as our <CODE>'$imno'</CODE> example.<P>
+
+The following call reports the number of devices (e.g. GPUs) your computer has:
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+count = cns('devcount')
+count = cns('devcount', platform)
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+
+The first version reports this number for the <A HREF="#platform">currently selected platform</A> (<CODE>'gpu'</CODE> by default).  The second version reports this number for the platform you supply.
+
+<BLOCKQUOTE><TABLE BORDER="1">
+<TR><TD><B>if the platform is:</B></TD><TD><B><CODE>count</CODE> will be:</B></TD></TR>
+<TR><TD><CODE>'gpu'</CODE></TD><TD>the number of GPUs in the computer</TD></TR>
+<TR><TD><CODE>'gpu#'</CODE></TD><TD>1</TD></TR>
+<TR><TD><CODE>'cpu' or 'debug'</CODE></TD><TD>inf</TD></TR>
+</TABLE></BLOCKQUOTE>
+
+The following call returns a vector of session IDs for all active sessions:
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+<FONT COLOR="red">sids</FONT> = cns('sessions')
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+
+Finally, this last call is useful when you have multiple sessions and:
+<UL>
+<LI>you need to call some MATLAB code that itself makes <CODE>cns</CODE> calls, but
+<LI>the code you need to call does not accept a session ID as an argument.
+</UL>
+The <CODE>'use'</CODE> call allows you to set a session ID that will be used by <CODE>cns</CODE> calls that do not pass a session ID explicitly.  The affected calls are <A HREF="#init"><CODE>init</CODE></A>, <A HREF="#done"><CODE>done</CODE></A>, <A HREF="#get"><CODE>get</CODE></A>, <A HREF="#update"><CODE>update</CODE></A>, <A HREF="#set"><CODE>set</CODE></A>, <A HREF="#run"><CODE>run</CODE></A>, and <A HREF="#step"><CODE>step</CODE></A>.  The following three commands allow you to set, clear and retrieve this session ID.
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+      cns('use', <FONT COLOR="red">sid</FONT>)
+      cns('use', 'none')
+
+<FONT COLOR="red">sid</FONT> = cns('use')
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+
+</BODY>
+</HTML>

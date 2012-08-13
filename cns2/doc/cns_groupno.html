@@ -1,0 +1,50 @@
+<HTML>
+<HEAD>
+<TITLE>cns_groupno</TITLE>
+</HEAD>
+<BODY>
+
+<H1><CODE>cns_groupno</CODE></H1>
+
+Finds <A HREF="model.html#group">group</A> numbers in a <A HREF="model.html#build">model structure</A> by group name.
+
+<H2>Syntax</H2>
+
+<H3>Finding a Single Group Number</H3>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+g = cns_groupno(m, name)
+g = cns_groupno(m, name, err)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>m</CODE></DT><DD>
+A <A HREF="model.html#build">model structure</A>.
+</DD><P>
+<DT><CODE>name</CODE></DT><DD>
+A group name.  Can also be a group number, in which case it will just be validated.</DD><P>
+<DT><CODE>err</CODE></DT><DD>
+Affects what happens if the group name cannot be found in <CODE>m</CODE>.  If <CODE>true</CODE>, will halt with an error.  If <CODE>false</CODE>, will cause <CODE>g</CODE> to return <CODE>0</CODE>.  Defaults to <CODE>true</CODE>.
+</DD><P>
+<DT><CODE>g</CODE></DT><DD>
+The group number if found.  If not found, and <CODE>err</CODE> is <CODE>false</CODE>, will return <CODE>0</CODE>.
+</DD>
+</DL>
+
+<H3>Finding All Group Numbers</H3>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+s = cns_groupno(m)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>m</CODE></DT><DD>
+A <A HREF="model.html#build">model structure</A>.
+</DD><P>
+<DT><CODE>s</CODE></DT><DD>
+Returns a structure with one field per group name, where the value of each such field is the group number.
+</DD>
+</DL>
+
+</BODY>
+</HTML>

@@ -1,0 +1,37 @@
+<HTML>
+<HEAD>
+<TITLE>cns_iconv</TITLE>
+</HEAD>
+<BODY>
+
+<H1><CODE>cns_iconv</CODE></H1>
+
+Converts cell indices between representations of different dimensionality, e.g., between N-D indices and 1-D (<A HREF="http://www.mathworks.com/access/helpdesk/help/techdoc/math/f1-85462.html#f1-85511">linear</A>) indices.<P>
+
+In MATLAB, elements of an N-D array can be accessed using any number of indices from 1 to N.  When using D < N indices, the dimensions (D : N) are treated as a single dimension, indexed by the D<SUP>th</SUP> index.  This can be quite useful.<P>
+
+This function is a generalization of MATLAB's <A HREF="http://www.mathworks.com/access/helpdesk/help/techdoc/ref/sub2ind.html"><CODE>sub2ind</CODE></A> and <A HREF="http://www.mathworks.com/access/helpdesk/help/techdoc/ref/ind2sub.html"><CODE>ind2sub</CODE></A> functions.  <CODE>cns_iconv</CODE> converts indices between any two representations (D<SUB>1</SUB> &le; N) and (D<SUB>2</SUB> &le; N).
+
+<H2>Syntax</H2>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+[j1, j2, ...] = cns_iconv(m, z, i1, i2, ...)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>m</CODE></DT><DD>
+A <A HREF="model.html#build">model structure</A>.
+</DD><P>
+<DT><CODE>z</CODE></DT><DD>
+The layer number.
+</DD><P>
+<DT><CODE>i1, i2, ...</CODE></DT><DD>
+The indices of a cell in layer <CODE>z</CODE>.  From 1 to N numbers, where N is the <A HREF="package.html#dims">dimensionality</A> of the layer.  These can also be arrays (for multiple cells), but must all be of the same size.
+</DD><P>
+<DT><CODE>j1, j2, ...</CODE></DT><DD>
+The indices of the same cell using a (presumably different) dimensionality representation.  The output dimensionality is determined by the number of outputs.  For multiple cells, each <CODE>j</CODE> will be the same size as the <CODE>i</CODE> inputs.
+</DD>
+</DL>
+
+</BODY>
+</HTML>

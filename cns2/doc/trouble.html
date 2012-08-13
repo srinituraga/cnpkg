@@ -1,0 +1,134 @@
+<HTML>
+<HEAD>
+<TITLE>CNS: Troubleshooting</TITLE>
+<STYLE>
+BODY {
+    counter-reset: count1 4;
+}
+.tol1 {
+    counter-reset: item 4;
+}
+</STYLE>
+<LINK REL="stylesheet" TYPE="text/css" HREF="style.css"/>
+</HEAD>
+<BODY>
+
+<TABLE><TR>
+<TD><A HREF="http://cbcl.mit.edu/jmutch/cns"><IMG BORDER="1" SRC="figs/cns.png"></A></TD><TD VALIGN="top">
+&nbsp;<BIG><BIG><BIG><B>CNS: Cortical Network Simulator</B></BIG></BIG></BIG><BR>
+&nbsp;<BIG><BIG><BIG><B>Programming Guide</B></BIG></BIG></BIG>
+</TD></TR></TABLE>
+
+<H1>Troubleshooting</H1>
+
+<HR>
+
+<UL>
+<A HREF="index.html">Programming Guide</A>
+<OL CLASS="tol1">
+<LI CLASS="tli">Troubleshooting
+<OL CLASS="tol">
+<LI CLASS="tli"><A HREF="#common">Common Problems and Solutions</A>
+<OL CLASS="tol">
+<LI CLASS="tli"><A HREF="#build">Build Errors</A>
+<LI CLASS="tli"><A HREF="#init">Initialization Errors</A>
+<LI CLASS="tli"><A HREF="#run">Run Errors</A>
+</OL>
+<LI CLASS="tli"><A HREF="#debug">Debugging</A>
+</OL>
+</OL>
+</UL>
+
+<HR>
+
+<H2><A NAME="common">Common Problems and Solutions</A></H2>
+
+Note: this section does not attempt to list every error you might encounter -- just some that are common and whose cause may not be obvious.
+
+<H3><A NAME="build">Build Errors</A></H3>
+
+This section discusses problems running <A HREF="cns_build.html"><CODE>cns_build</CODE></A> to compile a <A HREF="package.html">package</A>.<P>
+
+<TABLE BORDER="1"><TR>
+<TD><B>Problem</B></TD>
+<TD><B>Remedy</B></TD>
+</TR><TR>
+<TD>Can't find the NVIDIA compiler, libraries, etc.</TD>
+<TD>Have you followed <I>all</I> the <A HREF="install.html">installation instructions</A>?</TD>
+</TR><TR>
+<TD>Can't find the package you are trying to compile.</TD>
+<TD><A HREF="cns_build.html"><CODE>cns_build</CODE></A> locates a package by finding the directory containing the function <CODE><I>package</I>.m</CODE>.  This directory must be in the MATLAB path for that to occur.</TD>
+</TR><TR>
+<TD>Object file is locked.</TD>
+<TD>You may have a <A HREF="cns.html#init">cns session</A> open.  Try:
+<BLOCKQUOTE><PRE>
+cns done all
+</PRE></BLOCKQUOTE>
+If that doesn't work, restart MATLAB.
+</TD>
+</TR></TABLE>
+
+<H3><A NAME="init">Initialization Errors</A></H3>
+
+This section discusses problems running <A HREF="cns.html#init"><CODE>cns('init')</CODE></A> to initialize a <A HREF="model.html#build">network model</A> on the GPU.<P>
+
+<TABLE BORDER="1"><TR>
+<TD><B>Problem</B></TD>
+<TD><B>Remedy</B></TD>
+</TR><TR>
+<TD>Can't load NVIDIA libraries.</TD>
+<TD>Have you followed <I>all</I> the <A HREF="install.html">installation instructions</A>?</TD>
+</TR><TR>
+<TD>No device (GPU) available.</TD>
+<TD>
+There are several possibilities:
+<UL>
+<LI>Does this computer even have a GPU?  (If not, you can still run CNS -- slowly -- in <A HREF="cns.html#init">CPU mode</A>.)
+<LI>All this computer's GPUs have been claimed by other users.
+<LI>You may have other MATLAB process running with open <A HREF="cns.html#init">cns sessions</A>.  Sometimes (especially on Linux) an instance of MATLAB may still be running even though you've closed the terminal.
+<LI>Are you signed into your Windows computer using Remote Desktop?  This doesn't work because Windows won't load the right display driver.  Use <A HREF="http://www.realvnc.com">VNC</A> instead.
+</UL>
+</TD>
+</TR><TR>
+<TD>Not enough memory.</TD>
+<TD>
+The most likely cause is that your model is simply too big to fit into GPU memory.  Try running <A HREF="cns.html#test"><CODE>cns('test')</CODE></A> to see how much memory your model requires.  This will give you an idea of how much smaller your model needs to be to work.  Note that different GPUs have different amounts of memory.<P>
+If you've run <A HREF="cns.html#test"><CODE>cns('test')</CODE></A> and it looks like your model should fit, maybe another process (yours or someone else's) is using the same card.  Try configuring your card to allow only one process at a time.
+</TD>
+</TR></TABLE>
+
+<H3><A NAME="run">Run Errors</A></H3>
+
+This section discusses problems with <A HREF="cns.html#run"><CODE>cns('run')</CODE></A> or <A HREF="cns.html#step"><CODE>cns('step')</CODE></A>.<P>
+
+<TABLE BORDER="1"><TR>
+<TD><B>Problem</B></TD>
+<TD><B>Remedy</B></TD>
+</TR><TR>
+<TD>Kernel launch errors.</TD>
+<TD>This happens when a kernel's <A HREF="package.html#blocksize">block size</A> -- the number of cells it tries to compute at once -- is too large.  Try making it smaller.<P>
+The maximum block size you can use depends on two things:
+<UL>
+<LI>The complexity of your kernel and the size of any <A HREF="package.html#locarray">local arrays</A> it uses.
+<LI>The quantity of <I>registers</I> and <I>shared memory</I> your particular GPU has.
+</UL>
+</TD>
+</TR><TR>
+<TD>Not enough memory for outputs.</TD>
+<TD>This typically happens when you're trying to use <A HREF="cns.html#run"><CODE>cns('run')</CODE></A> to compute a large number of iterations and return a large quantity of data for each iteration.  The default behavior is for CNS to collect the entire result in GPU memory and then transfer it back to the CPU all at once when all the iterations are complete.  You can adjust this by using the <I>buffer size</I> parameter, or if you don't need data for every iteration, the <I>sample rate</I> parameter.
+</TD>
+</TR></TABLE>
+
+<HR>
+
+<H2><A NAME="debug">Debugging</A></H2>
+
+CNS provides two main tools for debugging.
+
+<UL>
+<LI>You can use <A HREF="cns.html#get"><CODE>cns('get')</CODE></A> to retrieve the contents of variables between iterations or <A HREF="model.html#execorder">steps</A>.<P>
+<LI>You can embed <A HREF="package.html#genmac"><CODE>PRINT</CODE></A> or <A HREF="package.html#genmac"><CODE>ERROR</CODE></A> statements in your kernel code.  Both of these only work in <A HREF="cns.html#init">debug mode</A>.
+</UL>
+
+</BODY>
+</HTML>

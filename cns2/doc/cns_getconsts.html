@@ -1,0 +1,43 @@
+<HTML>
+<HEAD>
+<TITLE>cns_getconsts</TITLE>
+</HEAD>
+<BODY>
+
+<H1><CODE>cns_getconsts</CODE></H1>
+
+Retrieves the values of <A HREF="package.html#const">compile-time constants</A> that apply at the scope of a <A HREF="model.html#build">model</A>, <A HREF="model.html#layerinfo">layer</A>, or <A HREF="model.html#group">group</A> (based on the <A HREF="package.html">package</A> and cell type).
+
+<H2>Syntax</H2>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+[v, v, ...] = cns_getconsts(m, n, name, name, ...)
+s = cns_getconsts(m, n)
+s = cns_getconsts(m, n, nameList)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>m</CODE></DT><DD>
+A <A HREF="model.html#build">model structure</A>.
+</DD><P>
+<DT><CODE>n</CODE></DT><DD>
+<LI>A positive number indicates a layer.
+<LI>A negative number indicates a <A HREF="model.html#group">group</A>.
+<LI>Zero indicates model scope.
+</DD><P>
+<DT><CODE>name</CODE></DT><DD>
+The name of a constant (at the scope defined by <CODE>n</CODE>) whose value you want to retrieve.
+</DD><P>
+<DT><CODE>v</CODE></DT><DD>
+The value of the corresponding constant.
+</DD><P>
+<DT><CODE>nameList</CODE></DT><DD>
+A cell array of constant names (at the scope defined by <CODE>n</CODE>) whose values you want to retrieve.  Defaults to all valid constants.
+</DD><P>
+<DT><CODE>s</CODE></DT><DD>
+A structure with one field per name in <CODE>nameList</CODE> (or all valid constants if <CODE>nameList</CODE> is not provided), where the value of each such field is the value of the corresponding constant.
+</DD>
+</DL>
+
+</BODY>
+</HTML>

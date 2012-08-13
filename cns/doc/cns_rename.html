@@ -1,0 +1,39 @@
+<HTML>
+<HEAD>
+<TITLE>cns_rename</TITLE>
+</HEAD>
+<BODY>
+
+<H1><CODE>cns_rename</CODE></H1>
+
+Renames a <A HREF="package.html">package</A> by renaming files in the <A HREF="package.html#dir">package directory</A>.
+
+<H2>Syntax</H2>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+cns_rename <I>oldname</I> <I>newname</I>
+cns_rename <I>oldname</I> <I>newname</I> <I>subdir1</I> <I>subdir2</I> ...
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE><I>oldname</I></CODE></DT><DD>
+The current package name.  <CODE>cns_rename</CODE> will locate the package by looking for a file called <CODE><I>oldname</I>_cns.m</CODE> in your MATLAB path.
+</DD><P>
+<DT><CODE><I>newname</I></CODE></DT><DD>
+The new name for the package.
+</DD><P>
+<DT><CODE><I>subdir1</I> <I>subdir2</I> ...</CODE></DT><DD>
+By default, <CODE>cns_rename</CODE> only renames files in the <A HREF="package.html#dir">package directory</A> itself.  Here you may optionally add any subdirectories in which you also want files to be renamed.  These are assumed to be relative to (i.e. underneath) the package directory.
+</DD>
+</DL>
+
+<H2>Notes</H2>
+
+All files in the package directory (and any subdirectories you specify) that start with <CODE><I>oldname</I>_</CODE> will be renamed to start with <CODE><I>newname</I>_</CODE>.  The <CODE>function</CODE> line inside each <CODE>".m"</CODE> file is also updated.<P>
+
+Any references to the old function names that may exist in function bodies are <I>not</I> updated.<P>
+
+The package directory itself is not renamed.
+
+</BODY>
+</HTML>

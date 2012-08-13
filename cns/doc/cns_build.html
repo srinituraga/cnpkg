@@ -1,0 +1,98 @@
+<HTML>
+<HEAD>
+<TITLE>cns_build</TITLE>
+</HEAD>
+<BODY>
+
+<H1><CODE>cns_build</CODE></H1>
+
+Compiles a <A HREF="package.html">package</A> of cell types so that it can be used to build network models.  Packages must be compiled whenever files in the <A HREF="package.html#dir">package directory</A> change.<P>
+
+Can also produce several other outputs that help in package development.  All outputs go into the package directory.
+
+<H2>Syntax</H2>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+cns_build <I>package</I>
+cns_build <I>package</I> <I>action</I>
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE><I>package</I></CODE></DT><DD>
+The package name.  <CODE>cns_build</CODE> will locate the package by looking for a file called <CODE><I>package</I>_cns.m</CODE> in your MATLAB path.
+</DD><P>
+<DT><CODE><I>action</I></CODE></DT><DD>
+One of the actions in the table below.  Defaults to <CODE>compile</CODE>.
+</DD>
+</DL>
+
+<TABLE BORDER="1"><TR>
+<TD><B>Action</B></TD>
+<TD><B>Description</B></TD>
+<TD><B>Output Files</B></TD>
+</TR><TR>
+<TD><CODE>compile</CODE></TD><TD>
+Compiles the package.  Generates two MATLAB "mex" files, one for GPU execution and one for CPU execution.
+</TD><TD><PRE>
+<I>package</I>_cns_compiled_*.mex*
+</PRE></TD>
+</TR><TR>
+<TD><CODE>help</CODE></TD><TD>
+Generates a text file listing all available <A HREF="package.html#macros">CNS macros</A> for each cell type.
+</TD><TD><PRE>
+<I>package</I>_cns_compiled_help.txt
+</PRE></TD>
+</TR><TR>
+<TD><CODE>info</CODE></TD><TD>
+Generates a text file showing GPU <A HREF="#info">compilation details</A> for each kernel.  This can be useful for determining if your kernels are written (and being compiled) efficiently.  Click <A HREF="#info">here</A> for details on interpreting this file.
+</TD><TD><PRE>
+<I>package</I>_cns_compiled_cuda_info.txt
+</PRE></TD>
+</TR><TR>
+<TD><CODE>generate</CODE></TD><TD>
+For the curious.  Generates all the same temporary files that are normally generated during the <CODE>compile</CODE> process, but just leaves them in the package directory without compiling them.
+</TD><TD><PRE>
+<I>package</I>_cns_generated_*
+</PRE></TD>
+</TR><TR>
+<TD><CODE>preprocess</CODE></TD><TD>
+Also for the curious.  Performs the <CODE>compile</CODE> process up to and including the C++ preprocessor step, but does not perform the final compilation into object code.  Interesting if you want to see what all the macros expand into.
+</TD><TD><PRE>
+<I>package</I>_cns_compiled_*_pre.*
+</PRE></TD>
+</TR><TR>
+<TD><CODE>clean</CODE></TD><TD>
+Deletes any of the above compilation outputs from the package directory.
+</TD><TD>
+<I>n/a</I>
+</TD>
+</TR></TABLE><P>
+
+<HR>
+
+<H2><A NAME="info">Interpreting GPU Compilation Details</A></H2>
+
+The file <CODE><I>package</I>_cns_compiled_cuda_info.txt</CODE>, produced by the <CODE>info</CODE> option, will contain a section like this for every kernel:<P>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+code {
+    name = _Z11_kernel_<FONT COLOR="red"><B>max</B></FONT>jjPKf9_OutTablejjjPK7ushort4PK10_LayerData
+    <FONT COLOR="red"><B>lmem = 0</B></FONT>
+    smem = 224
+    <FONT COLOR="red"><B>reg  = 22</B></FONT>
+    bar  = 1
+    const {
+</PRE></TD></TR></TABLE><P>
+
+The three useful pieces of information are <FONT COLOR="red"><B>highlighted</B></FONT>:
+
+<OL>
+<LI>The type name.  (In this example, "max".)<P>
+<LI>The amount of <I>local memory</I> the kernel uses.  This is a misnomer on NVIDIA's part: "local memory" in their terminology refers to memory a kernel uses for local calculations that does <I>not</I> fit into registers.  It is actually in main GPU memory, which has high latency.  <B>You want this number to be zero.</B>  (In this example, it is.)  A common way this number gets to be nonzero is when you declare local C++ arrays in the kernel.  Consider using CNS's alternative <A HREF="package.html#locarray">fast local arrays</A> instead.<P>
+<LI>The number of registers the kernel uses.  Lower is better, because it means you can make the <A HREF="package.html#prop">block size</A> larger.
+</OL>
+
+The file also contains a lot of other junk which you can ignore.
+
+</BODY>
+</HTML>

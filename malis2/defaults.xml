@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<defaults>
+   <node>
+      <eta>1</eta>
+      <sigma>1</sigma>
+      <map_count>1</map_count>
+      <multiscale>
+         <x>1</x>
+         <y>1</y>
+         <z>1</z>
+      </multiscale>
+   </node>
+   <weight>
+      <eta>1</eta>
+      <sigma>1</sigma>
+      <size>
+         <x>1</x>
+         <y>1</y>
+         <z>1</z>
+      </size>
+      <multiscale_pixel_size>
+         <x>1</x>
+         <y>1</y>
+         <z>1</z>
+      </multiscale_pixel_size>
+      <multiscale_pixel_space>
+         <x>1</x>
+         <y>1</y>
+         <z>1</z>
+      </multiscale_pixel_space>
+   </weight>
+</defaults>

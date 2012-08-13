@@ -1,0 +1,51 @@
+<HTML>
+<HEAD>
+<TITLE>cns_setstepnos</TITLE>
+</HEAD>
+<BODY>
+
+<H1><CODE>cns_setstepnos</CODE></H1>
+
+Automatically determines the <A HREF="model.html#execorder">execution order</A> of layers for feedforward models.
+
+<H2>Syntax</H2>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+m = cns_setstepnos(m, mode, <I>mode-specific-args</I>)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>m</CODE></DT><DD>
+A <A HREF="model.html#build">model structure</A>.
+</DD><P>
+<DT><CODE>mode</CODE></DT><DD>
+Selects the method that will be used to figure out the execution order; see the table below.  (Currently the only option is <CODE>'field'</CODE>.)
+</DD><P>
+<DT><CODE><I>mode-specific-args</I></CODE></DT><DD>
+Additional arguments depending on the <CODE>mode</CODE>; see the table below.
+</DD>
+</DL>
+
+<TABLE BORDER="1"><TR>
+<TD><B>Mode</B></TD>
+<TD><B>Description and Additional Arguments</B></TD>
+</TR><TR>
+<TD><CODE>'field'</CODE></TD><TD>
+Assumes that all layer-layer dependencies are encoded by one or more <A HREF="package.html#pfield">pointer fields</A> (class <CODE>'lz'</CODE>) defined at the <A HREF="package.html#dir">base level</A>.  The only additional argument is:
+<BLOCKQUOTE><PRE>
+field
+</PRE></BLOCKQUOTE>
+<DL>
+<DT><CODE>field</CODE></DT><DD>
+The name of a single pointer field, or a cell array of names.
+</DD>
+</DL>
+</TD>
+</TR></TABLE>
+
+<H2>Notes</H2>
+
+It may also be appropriate to set the <A HREF="model.html#execorder"><CODE>independent</CODE></A> flag for your model.
+
+</BODY>
+</HTML>

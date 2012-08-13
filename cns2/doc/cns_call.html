@@ -1,0 +1,49 @@
+<HTML>
+<HEAD>
+<TITLE>cns_call</TITLE>
+</HEAD>
+<BODY>
+
+<H1><CODE>cns_call</CODE></H1>
+
+Calls the appropriate <A HREF="package.html#method">MATLAB method</A> for an existing layer or group.  This is safer than calling the method directly; see <A HREF="#notes">notes</A>.
+
+<H2>Syntax</H2>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+[out1, out2, ...] = cns_call(m,  z, method, arg1, arg2, ...)
+[out1, out2, ...] = cns_call(m, -g, method, arg1, arg2, ...)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>m</CODE></DT><DD>
+A <A HREF="model.html#build">model structure</A>.  This will be passed as the method's first argument.
+</DD><P>
+<DT><CODE>z</CODE></DT><DD>
+A layer number.  The method will be called with arguments <CODE>(m, z, arg1, arg2, ...)</CODE>.
+</DD><P>
+<DT><CODE>g</CODE></DT><DD>
+A group number.  The method will be called with arguments <CODE>(m, g, arg1, arg2, ...)</CODE>.  Note the <CODE>"-"</CODE> sign to distinguish <CODE>g</CODE> from a layer number.  It is removed before calling the method itself.
+</DD><P>
+<DT><CODE>method</CODE></DT><DD>
+The method name.
+</DD><P>
+<DT><CODE>arg1, arg2, ...</CODE></DT><DD>
+Any additional inputs.  Depends on the particular method.
+</DD><P>
+<DT><CODE>out1, out2, ...</CODE></DT><DD>
+Any outputs.  Depends on the particular method.
+</DD>
+</DL>
+
+<H2><A NAME="notes">Notes</A></H2>
+
+Using <CODE>cns_call</CODE> is preferable to calling the method directly, like this:
+<BLOCKQUOTE><PRE>
+<I>package</I>_<I>type</I>.<I>method</I>(m,  z, arg1, arg2, ...)
+<I>package</I>_<I>type</I>.<I>method</I>(m, -g, arg1, arg2, ...)
+</PRE></BLOCKQUOTE>
+
+because if the layer (or group) is a subtype of <I>type</I> which overrides <I>method</I>, <CODE>cns_call</CODE> will correctly call the subtype's implementation of the method.
+</BODY>
+</HTML>

@@ -1,0 +1,6 @@
+#! /bin/csh -f
+
+# These settings provided by Srini Turaga, 2009/11/23.
+
+set          CUDA = 1
+set CUDA_LINK_LIB = (/usr/local/cuda/lib/libcudart.dylib /usr/local/cuda/lib/libtlshook.dylib)

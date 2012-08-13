@@ -1,0 +1,5 @@
+#! /bin/csh -f
+
+set          CUDA = 1
+set CUDA_LINK_LIB = /usr/local/software/cuda/cuda-4.0/lib64/libcudart.so
+#set CUDA_LINK_LIB = /usr/local/software/cuda/cuda-2.3/lib64/libcudart.so

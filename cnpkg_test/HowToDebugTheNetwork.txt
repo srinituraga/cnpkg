@@ -1,0 +1,36 @@
+To get inputBlock
+inputBlock = cns ('get', 1, 'val');
+inputBlock = reshape (inputBlock(1,:,:,:), [127 127 127]);
+-------------------------------------------------------------
+
+To get outputBlock
+outputBlock = cns ('get', 2, 'val');
+outputBlock = reshape (outputBlock(1,:,:,:), [111 111 111]);
+-------------------------------------------------------------
+
+To get maskblock
+maskBlock = cns ('get', 4, 'val');
+maskBlock = reshape (maskBlock(1,:,:,:), [111 111 111]);
+-------------------------------------------------------------
+
+To get list of centers index list
+indices = cns ('get', 3, 'val');
+
+-------------------------------------------------------------
+
+To get input layer values
+input = cns ('get', 5, 'val');
+input = reshape (input(1,:,:,:), [17 17 17]);
+-------------------------------------------------------------
+
+First hidden layer values
+weight = cns ('get', 6, 'val'); weight = reshape (weight (1,:,:,:,:), [5 5 5 10]);
+bias = cns ('get', 7, 'val');
+featureMap = cns ('get', 8, 'val');
+featureMapi = featureMap (i, :, :, :);
+-------------------------------------------------------------
+
+To get output layer values
+output = cns ('get', 17, 'val');
+output = reshape (output(1,:,:,:), [1 1 1]);
+-------------------------------------------------------------

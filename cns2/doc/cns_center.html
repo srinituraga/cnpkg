@@ -1,0 +1,40 @@
+<HTML>
+<HEAD>
+<TITLE>cns_center</TITLE>
+</HEAD>
+<BODY>
+
+<H1><CODE>cns_center</CODE></H1>
+
+Returns the position in <A HREF="package.html#common">common coordinate space</A> of a cell along a particular <A HREF="package.html#dims">dimension</A>. This is a floating point number.
+
+<H2>Syntax</H2>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+p = cns_center(m, z, dim, c)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>m</CODE></DT><DD>
+A <A HREF="model.html#build">model structure</A>.
+</DD><P>
+<DT><CODE>z</CODE></DT><DD>
+The layer number.
+</DD><P>
+<DT><CODE>dim</CODE></DT><DD>
+The <A HREF="package.html#dims">dimension</A> name or number.
+</DD><P>
+<DT><CODE>c</CODE></DT><DD>
+Index (along this dimension) of the cell in layer <CODE>z</CODE>.
+</DD><P>
+<DT><CODE>p</CODE></DT><DD>
+The resulting common coordinate position.
+</DD>
+</DL>
+
+<H2>Notes</H2>
+
+The equivalent kernel macro is <A HREF="package.html#gridmac"><CODE><I>type</I>_<I>dim</I>_CENTER</CODE></A>.
+
+</BODY>
+</HTML>

@@ -1,0 +1,136 @@
+<HTML>
+<HEAD>
+<TITLE>cns_mapdim</TITLE>
+</HEAD>
+<BODY>
+
+<H1><CODE>cns_mapdim</CODE></H1>
+
+For <A HREF="package.html#dims">dimensions</A> of a layer that are mapped to a <A HREF="package.html#common">common coordinate space</A>, this is the main function used to <A HREF="model.html#common">determine layer size and assign common coordinates</A> along those dimensions.  This can be done in many different ways.<P>
+
+<H2>Syntax</H2>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+m = cns_mapdim(m, z, dim, mode, <I>mode-specific-args</I>)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>m</CODE></DT><DD>
+A <A HREF="model.html#build">model structure</A>.
+</DD><P>
+<DT><CODE>z</CODE></DT><DD>
+The layer number for which we are determining the size and common coordinates (along some dimension).
+</DD><P>
+<DT><CODE>dim</CODE></DT><DD>
+The name or number of the <A HREF="package.html#dims">dimension</A> (of layer <CODE>z</CODE>) for which we are determining the size and common coordinates.
+</DD><P>
+<DT><CODE>mode</CODE></DT><DD>
+Identifies the particular method we will use; see the table below.
+</DD><P>
+<DT><CODE><I>mode-specific-args</I></CODE></DT><DD>
+Additional arguments depending on the <CODE>mode</CODE>; see the table below.
+</DL>
+
+<TABLE BORDER="1"><TR>
+<TD><B>Mode</B></TD>
+<TD><B>Description and Additional Arguments</B></TD>
+</TR><TR>
+<TD><CODE>'pixels'</CODE></TD><TD>
+Sets the dimension size to an arbitrary number, and assigns common coordinates so that the cells (pixels) fill the interval [0, 1].  The only additional argument is:
+<BLOCKQUOTE><PRE>
+size
+</PRE></BLOCKQUOTE>
+<DL>
+<DT><CODE>size</CODE></DT><DD>
+A positive integer.
+</DD>
+</DL>
+</TD>
+</TR><TR>
+<TD><CODE>'scaledpixels'</CODE></TD><TD>
+This is similar to <CODE>'pixels'</CODE> except that the dimension size is given as a scaled-down version of a base size.  If the base size is odd, the resulting dimension size is guaranteed to be odd, no matter what the scale factor.  Similarly, an even base size will always result in an even dimension size.  All this is done so that multiple layers which represent different rescalings of an image will all have the same form -- either they will all have a central cell, or none will.  The additional arguments are:
+<BLOCKQUOTE><PRE>
+baseSize, factor
+</PRE></BLOCKQUOTE>
+<DL>
+<DT><CODE>baseSize</CODE></DT><DD>
+A positive integer.
+</DD>
+<DT><CODE>factor</CODE></DT><DD>
+The scale factor.  A floating-point number greater than or equal to 1.
+</DD>
+</DL>
+</TD>
+</TR><TR>
+<TD><CODE>'copy'</CODE></TD><TD>
+Copies settings for this dimension from another layer.  Layer <CODE>z</CODE> will have the same number of cells, at the same common coordinate positions, as layer <CODE>pz</CODE>.  The only additional argument is:
+<BLOCKQUOTE><PRE>
+pz
+</PRE></BLOCKQUOTE>
+<DL>
+<DT><CODE>pz</CODE></DT><DD>
+The layer number to copy settings from.
+</DD>
+</DL>
+</TD>
+</TR><TR>
+<TD><CODE>'int'</CODE></TD><TD>
+Sets up layer <CODE>z</CODE> as the result of a valid "convolution" of another layer <CODE>pz</CODE> with a filter.  (It's not strictly convolution because the filter can move across layer <CODE>pz</CODE> in steps of 1 or greater.  This is illustrated nicely <A HREF="package.html#common">here</A>.)  Ensures that the resulting layer <CODE>z</CODE> will always be symmetric about the center -- any losses at the edges will be the same at both edges.  The additional arguments are:
+<BLOCKQUOTE><PRE>
+pz, rfSize, rfStep
+</PRE></BLOCKQUOTE>
+<DL>
+<DT><CODE>pz</CODE></DT><DD>
+The layer number which is the input to the convolution.
+</DD>
+<DT><CODE>rfSize</CODE></DT><DD>
+The size of the filter (a positive integer).  Can also be <CODE>inf</CODE>, indicating that the filter represents a global pooling operation -- in this case the resulting layer <CODE>z</CODE> will have size 1.
+</DD>
+<DT><CODE>rfStep</CODE></DT><DD>
+The step size with which the filter moves across layer <CODE>pz</CODE>.  A positive integer.
+</DD>
+</DL>
+</TD>
+</TR><TR>
+<TD><CODE>'int-td'</CODE></TD><TD>
+This is the top-down version of <CODE>'int'</CODE>.  Here, layer <CODE>pz</CODE> is treated as the <I>result</I> of the convolution, and we're setting up layer <CODE>z</CODE> so that it will be large enough to produce layer <CODE>pz</CODE> as a result.  The additional arguments are:
+<BLOCKQUOTE><PRE>
+pz, rfSize, rfStep
+</PRE></BLOCKQUOTE>
+<DL>
+<DT><CODE>pz</CODE></DT><DD>
+The layer number which is the <I>output of</I> the convolution.
+</DD>
+<DT><CODE>rfSize</CODE></DT><DD>
+The size of the filter (a positive integer).  <I>Cannot</I> be <CODE>inf</CODE>.
+</DD>
+<DT><CODE>rfStep</CODE></DT><DD>
+The step size with which the filter moves across layer <CODE>z</CODE>.  A positive integer.
+</DD>
+</DL>
+</TD>
+</TR><TR>
+<TD><CODE>'win'</CODE></TD><TD>
+TODO.  The additional arguments are:
+<BLOCKQUOTE><PRE>
+pz, rfSize, rfStep, rfMargin
+</PRE></BLOCKQUOTE>
+<DL>
+<DT><CODE>pz</CODE></DT><DD>
+TODO.
+</DD>
+<DT><CODE>rfSize</CODE></DT><DD>
+TODO.  A positive floating-point number.  Can be <CODE>inf</CODE>.
+</DD>
+<DT><CODE>rfStep</CODE></DT><DD>
+TODO.  A positive floating-point number.
+</DD>
+<DT><CODE>rfMargin</CODE></DT><DD>
+TODO.  Any positive or negative floating-point number.
+</DD>
+</DL>
+</TD>
+</TR></TABLE>
+
+</BODY>
+</HTML>

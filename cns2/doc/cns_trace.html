@@ -1,0 +1,38 @@
+<HTML>
+<HEAD>
+<TITLE>cns_trace</TITLE>
+</HEAD>
+<BODY>
+
+<H1><CODE>cns_trace</CODE></H1>
+
+Traces pathways through a network formed by <A HREF="model.html#exsyn">explicit synapses</A>.<P>
+
+Starting with a cell (or cells) in a specific layer, we find all cells in a target layer that can be reached by following a specific sequence of layer-layer jumps.
+
+<H2>Syntax</H2>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+[j1, j2, ...] = cns_trace(m, z, path, i1, i2, ...)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>m</CODE></DT><DD>
+A <A HREF="model.html#build">model structure</A>.
+</DD><P>
+<DT><CODE>z</CODE></DT><DD>
+The layer number containing the starting cell(s).
+</DD><P>
+<DT><CODE>path</CODE></DT><DD>
+A vector of layer numbers representing a sequence of jumps.  A positive number represents a forward jump (pre-to-postsynaptic), and a negative number represents a backward jump (post-to-presynaptic).  The (absolute value of) the last element is the target layer.  For example, <CODE>[-3 4]</CODE> means a backward jump to layer 3 and then a forward jump to layer 4; the output cells will be in layer 4.
+</DD><P>
+<DT><CODE>i1, i2, ...</CODE></DT><DD>
+Indices of one or more starting cells in layer <CODE>z</CODE>.  You can specify these indices using from 1 to N dimensions, where N is the <A HREF="package.html#dims">dimensionality</A> of layer <CODE>z</CODE> (see <A HREF="cns_iconv.html"><CODE>cns_iconv</CODE></A> for an explanation of N-D indices).  <CODE>i1</CODE> will contain index 1 for all starting cells, <CODE>i2</CODE> will contain index 2 for all starting cells, etc.
+</DD><P>
+<DT><CODE>j1, j2, ...</CODE></DT><DD>
+Indices of the resulting cells in the target layer, represented using from 1 to M dimensions, determined by the number of outputs, where M is the <A HREF="package.html#dims">dimensionality</A> of the target layer.  <CODE>j1</CODE> will contain index 1 for all result cells, <CODE>j2</CODE> will contain index 2 for all result cells, etc.
+</DD>
+</DL>
+
+</BODY>
+</HTML>

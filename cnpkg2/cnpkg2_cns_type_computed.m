@@ -1,0 +1,26 @@
+function varargout = cnpkg_cns_type_computed(method, varargin)
+
+[varargout{1 : nargout}] = feval(['method_' method], varargin{:});
+
+return;
+
+%***********************************************************************************************************************
+
+function p = method_props
+
+p.super    = 'layer';
+p.abstract = true;
+
+return;
+
+%***********************************************************************************************************************
+
+function d = method_fields
+
+d.zp = {'lz', 'type', 'layer', 'mv'};
+d.zw = {'lz', 'type', 'weight', 'mv'};
+d.zb = {'lz', 'type', 'bias'};
+
+d.sens = {'cv', 'cache', 'dflt', 0};
+
+return;

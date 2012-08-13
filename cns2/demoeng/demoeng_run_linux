@@ -1,0 +1,8 @@
+#! /bin/csh -f
+
+set libpath = /cbcl/local64/pkg/matlab-2010b/bin/glnxa64:/cbcl/local64/pkg/matlab-2010b/sys/os/glnxa64:/usr/local/cuda/lib
+
+set cnsdir = `dirname $cwd`
+
+setenv LD_LIBRARY_PATH $libpath
+./demoeng $cnsdir

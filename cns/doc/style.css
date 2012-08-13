@@ -1,0 +1,36 @@
+H1:before { 
+    content: counter(count1) ". ";
+    counter-increment: count1;
+}
+H1 {
+    counter-reset: count2;
+}
+H2:before {
+    content: counter(count1) "." counter(count2) ". ";
+    counter-increment: count2;
+}
+H2 {
+    counter-reset: count3;
+}
+H3:before {
+    content: counter(count1) "." counter(count2) "." counter(count3) ". ";
+    counter-increment: count3;
+}
+H3 {
+    counter-reset: count4;
+}
+H4:before {
+    content: counter(count1) "." counter(count2) "." counter(count3) "." counter(count4) ". ";
+    counter-increment: count4;
+}
+
+.tol {
+    counter-reset: item;
+}
+.tli:before {
+    content: counters(item, ".") ". ";
+    counter-increment: item;
+}
+.tli {
+    display: block;
+}

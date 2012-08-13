@@ -1,0 +1,155 @@
+<HTML>
+<HEAD>
+<TITLE>CNS: Installation</TITLE>
+<STYLE>
+BODY {
+    counter-reset: count1 1;
+}
+.tol1 {
+    counter-reset: item 1;
+}
+</STYLE>
+<LINK REL="stylesheet" TYPE="text/css" HREF="style.css"/>
+</HEAD>
+<BODY>
+
+<TABLE><TR>
+<TD><A HREF="http://cbcl.mit.edu/jmutch/cns"><IMG BORDER="1" SRC="figs/cns.png"></A></TD><TD VALIGN="top">
+&nbsp;<BIG><BIG><BIG><B>CNS: Cortical Network Simulator</B></BIG></BIG></BIG><BR>
+&nbsp;<BIG><BIG><BIG><B>Programming Guide</B></BIG></BIG></BIG>
+</TD></TR></TABLE>
+
+<H1>Installation</H1>
+
+<HR><P>
+
+Note: CNS is designed to run on a GPU, but can also run without one (much more slowly).  These instructions are written assuming you have a GPU.  If you don't, skip any steps written in <I>italics</I> and also read <A HREF="#nogpu">this section</A>.<P>
+
+<HR>
+
+<UL>
+<A HREF="index.html">Programming Guide</A>
+<OL CLASS="tol1">
+<LI CLASS="tli">Installation
+<OL CLASS="tol">
+<LI CLASS="tli"><A HREF="#req">Requirements</A>
+<LI CLASS="tli"><A HREF="#prep">Preparing Your Computer</A>
+<LI CLASS="tli"><A HREF="#core">Installing Core CNS</A>
+<LI CLASS="tli"><A HREF="#package">Installing Packages</A>
+<LI CLASS="tli"><A HREF="#nogpu">Running Without a GPU</A>
+</OL>
+</OL>
+</UL>
+
+<HR>
+
+<H2><A NAME="req">Requirements</A></H2>
+
+<UL>
+<LI>Linux, Windows, or Mac OS.
+<LI><A HREF="http://en.wikipedia.org/wiki/MATLAB">MATLAB</A> 2009a or higher.
+<LI><I><A HREF="http://www.nvidia.com/object/cuda_get.html">CUDA</A> 3.2.</I>
+<LI>A C++ compiler compatible with all the above.
+<UL>
+<LI>Build scripts assume <CODE>gcc</CODE> for Linux or Mac and Visual Studio for Windows.
+<LI>(Linux or Mac only.) For CNS to <I>control multiple GPUs from one instance of MATLAB, and to</I> run models asynchronously, your compiler must have the <CODE>&lt;pthread.h&gt;</CODE> library.
+</UL>
+<LI><I>An <A HREF="http://en.wikipedia.org/wiki/CUDA#Supported_GPUs">NVIDIA GPU</A> that supports the CUDA API.</I>
+</UL>
+
+<HR>
+
+<H2><A NAME="prep">Preparing Your Computer</A></H2>
+
+<OL>
+<LI>Make sure MATLAB's "mex" command can find your C++ compiler.  You can set this up in MATLAB with the command "mex -setup".<P>
+<LI><I>Make sure the <A HREF="http://www.nvidia.com/object/cuda_get.html">CUDA driver and CUDA toolkit</A> (both version 3.2) are installed.  If you need to install them, install the driver first.  Note that CNS does not require the CUDA SDK.</I><P>
+<LI><I>(Linux only.) Consider setting your GPU(s) to "exclusive access" mode to ensure that they will only allow one model at a time to run.  Usually, trying to run multiple models on one GPU results in out-of-GPU-memory errors.  Setting exclusive access avoids this.  In multi-GPU systems, this setting also allows CNS to automatically select a GPU that isn't being used.  Under other operating systems, GPU selection must currently be managed manually.  See the NVIDIA documentation for how to specify exclusive access under Linux.</I><P>
+<LI>(Linux or Mac only.) Make sure you have the C shell installed.<P>
+<LI>Make sure that on operating system startup:<P>
+<UL>
+<LI><I>the system path contains the path to the NVIDIA compiler (nvcc).  On Linux this is by default "/usr/local/cuda/bin".</I>
+<LI>the "mex" command works from the operating system command line.  This may involve adding something to your system path.
+</UL><P>
+<LI><I>(Linux or Mac only.) Make sure that on operating system startup:</I><P>
+<UL>
+<LI><I>the environment variable "LD_LIBRARY_PATH" contains the path to the NVIDIA libraries.  In Linux this is by default "/usr/local/cuda/lib".</I>
+</UL>
+</OL>
+
+<HR>
+
+<H2><A NAME="core">Installing Core CNS</A></H2>
+
+<OL>
+<LI>Unpack the archive file and move the "cns" directory to wherever you will be using it.<P>
+<LI>Make sure the settings in one of these files (the one corresponding to your OS) are correct for your computer:
+<BLOCKQUOTE><PRE>
+cns/scripts/linux/setup
+cns/scripts/win/setup.bat
+cns/scripts/mac/setup
+</PRE></BLOCKQUOTE>
+<LI>(Linux or Mac only.) Make sure the following permissions are set:<P>
+<UL>
+<LI>all files under "cns/scripts" are executable.
+<LI>it is possible to create new files in "cns" or subdirectories.
+</UL><P>
+<LI>Make sure the "cns" directory and its subdirectories will be in your MATLAB path on startup.  One way to do this is to call "cns/cns_path.m" from your "startup.m" file.<P>
+<LI>(In MATLAB.) Create binaries by running:
+<BLOCKQUOTE><CODE>
+cns_install
+</CODE></BLOCKQUOTE>
+<LI>(In MATLAB.) Compile the demo package using the command:
+<BLOCKQUOTE><CODE>
+cns_build demopkg
+</CODE></BLOCKQUOTE>
+<LI>(In MATLAB.) Run the demo package by typing "demopkg_run".  If everything is working, MATLAB should output the following messages:
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+Defining a network model....
+Building the model (platform: GPU)....
+Reading a test image and loading it into the model....
+Running the model and retrieving result....
+Elapsed time is ??? seconds.
+Plotting result....
+Releasing model resources....
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+and you should also see the following figure:
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD>
+<IMG SRC="figs/demopkg.jpeg">
+</TD></TR></TABLE></BLOCKQUOTE>
+</OL>
+
+<HR>
+
+<H2><A NAME="package">Installing Packages</A></H2>
+
+Perform the following instructions for any packages you intend to use with CNS.
+
+<OL>
+<LI>Unpack the archive file and move the package directory to where you will be using it.<P>
+<LI>(Linux or Mac only.) Make sure permissions are set so that it is possible to create new files in the package directory.<P>
+<LI>Make sure the package directory and any subdirectories are in your MATLAB path.<P>
+<LI>Compile the package using the command <CODE>"cns_build <I>package</I>"</CODE>, where <I>package</I> is the package name.  Normally this will be the same as the directory name.  All file names in the package directory also start with the package name.
+</OL>
+
+<B><FONT COLOR="red">Note: if you change anything in a package directory, you must re-run the above <CODE>cns_build</CODE> command.</FONT></B><P>
+
+<HR>
+
+<H2><A NAME="nogpu">Running Without a GPU</A></H2>
+
+If you need to run CNS without a GPU, do the following.
+
+<UL>
+<LI>Skip any installation steps written in <I>italics</I> above.<P>
+<LI>Set <CODE>CUDA = 0</CODE> in one of these files (the one corresponding to your OS):
+<BLOCKQUOTE><PRE>
+cns/scripts/linux/setup
+cns/scripts/win/setup.bat
+cns/scripts/mac/setup
+</PRE></BLOCKQUOTE>
+<LI>In any script that calls <A HREF="cns.html#init"><CODE>cns('init')</CODE></A>, you must use the <CODE>'cpu'</CODE> (or <CODE>'debug'</CODE>) option.  This includes the <CODE>demopkg_run</CODE> script mentioned <A HREF="#core">above</A>.
+</UL>
+
+</BODY>
+</HTML>

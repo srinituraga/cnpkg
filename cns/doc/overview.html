@@ -1,0 +1,197 @@
+<HTML>
+<HEAD>
+<TITLE>CNS: Overview</TITLE>
+<STYLE>
+BODY {
+    counter-reset: count1 0;
+}
+.tol1 {
+    counter-reset: item 0;
+}
+</STYLE>
+<LINK REL="stylesheet" TYPE="text/css" HREF="style.css"/>
+</HEAD>
+<BODY>
+
+<TABLE><TR>
+<TD><A HREF="http://cbcl.mit.edu/jmutch/cns"><IMG BORDER="1" SRC="figs/cns.png"></A></TD><TD VALIGN="top">
+&nbsp;<BIG><BIG><BIG><B>CNS: Cortical Network Simulator</B></BIG></BIG></BIG><BR>
+&nbsp;<BIG><BIG><BIG><B>Programming Guide</B></BIG></BIG></BIG>
+</TD></TR></TABLE>
+
+<H1>Overview</H1>
+
+<HR><P>
+
+CNS is a framework for the fast simulation of <A HREF="overview.html#cortical">cortically-organized</A> networks. Network models are defined and run from <A HREF="http://en.wikipedia.org/wiki/MATLAB">MATLAB</A>, but execute on <A HREF="http://en.wikipedia.org/wiki/CUDA#Supported_GPUs">NVIDIA GPUs</A>, offering speed increases of 50-100x over CPU-based simulations. Cell types used in network models are defined using a combination of MATLAB and C++, but <I>no knowledge</I> of GPU programming APIs (e.g. <A HREF="http://en.wikipedia.org/wiki/CUDA">CUDA</A>) is required.<P>
+
+<HR>
+
+<UL>
+<A HREF="index.html">Programming Guide</A>
+<OL CLASS="tol1">
+<LI CLASS="tli">Overview
+<OL CLASS="tol">
+<LI CLASS="tli"><A HREF="#cortical">Cortical Models</A>
+<LI CLASS="tli"><A HREF="#nd">Representing N-D in 2-D</A>
+<LI CLASS="tli"><A HREF="#connect">Unrestricted Connectivity</A>
+<LI CLASS="tli"><A HREF="#ffiter">Feedforward or Iterative Execution</A>
+<LI CLASS="tli"><A HREF="#working">Working with CNS</A>
+<OL CLASS="tol">
+<LI CLASS="tli"><A HREF="#package">Developing Packages of Cell Types</A>
+<LI CLASS="tli"><A HREF="#model">Building and Running Network Models</A>
+</OL>
+<LI CLASS="tli"><A HREF="#gpu">GPU Details CNS Handles For You</A>
+</OL>
+</OL>
+</UL>
+
+<HR>
+
+<H2><A NAME="cortical">Cortical Models</A></H2>
+
+A "cortical" network model -- as CNS defines it -- is a neural network model in which cells are arranged in two-dimensional layers, where each cell in a particular layer is of the same <I>type</I>, i.e., maintains a similar set of state variables and updates them using the same algorithm.  A well-known instance of a cortical network is the <A HREF="http://yann.lecun.com/exdb/lenet/index.html">convolutional network</A>.<P>
+
+<BLOCKQUOTE><TABLE BORDER="1">
+<CAPTION ALIGN="bottom">A convolutional network.  From <A HREF="http://yann.lecun.com/exdb/publis/pdf/lecun-95b.pdf">Lecun et al., 1995.</A>.</CAPTION>
+<TR><TD><IMG SRC="figs/convnet.jpeg"></TD></TR>
+</TABLE></BLOCKQUOTE>
+
+The following are also cortical models:
+
+<UL>
+<LI><A HREF="http://web.mit.edu/serre/www/publications/SerreOlivaPoggioPNAS07.pdf">CBCL-type</A> object recognition models.
+<LI>The <A HREF="http://en.wikipedia.org/wiki/Neocognitron">Neocognitron</A>.
+<LI><A HREF="http://www.scholarpedia.org/article/Deep_belief_networks">Deep Belief Networks</A>.
+<LI>Direct cortical simulations using spiking neuron models.
+<LI><I>Your model here.</I>
+</UL>
+
+This class of models is well-suited for simulating computations in real cortex, which itself has a 2-D laminar structure.<P>
+
+<BLOCKQUOTE><TABLE BORDER="1">
+<CAPTION ALIGN="bottom">Diagram of a lateral view of a typical area of cortex showing the cortical laminae.</CAPTION>
+<TR><TD><IMG SRC="figs/cortex.gif"></TD></TR>
+</TABLE></BLOCKQUOTE>
+
+Cortical models are also well-suited to implementation on modern <A HREF="http://en.wikipedia.org/wiki/GPGPU">GPUs</A>, which are optimized for <A HREF="http://en.wikipedia.org/wiki/Data_parallelism">data-parallel</A> computation on 2-D grids of data.<P>
+
+<HR>
+
+<H2><A NAME="nd">Representing N-D in 2-D</A></H2>
+
+While CNS models consist of cells arranged in two-dimensional layers, a 2-D layer can represent a feature space having N dimensions.  This happens throughout cortex, and CNS provides an automatic conversion between N-D arrays in MATLAB and 2-D grids on the GPU.<P>
+
+<BLOCKQUOTE><TABLE BORDER="1">
+<TR><TD>
+<TABLE>
+<CAPTION ALIGN="bottom">Schematic showing how four stimulus dimensions (X, Y, orientation, and ocular dominance) are represented on the 2-D surface of visual area V1.  From <A HREF="http://atlas.ici.ro/ehto/MEDINF99/papers/diana.htm">Lungeanu et al., 1999.</A></CAPTION>
+<TR><TD><IMG SRC="figs/v1.gif"></TD></TR>
+</TABLE>
+</TD><TD>
+<TABLE>
+<CAPTION ALIGN="bottom">How CNS might represent a four-dimensional stimulus space on a 2-D grid.  Here, dimensions x and y are "inner" dimensions while t and f are "outer" dimensions.</CAPTION>
+<TR><TD><IMG SRC="figs/dims.jpeg"></TD></TR>
+</TABLE>
+</TD></TR>
+</TABLE></BLOCKQUOTE>
+
+<HR>
+
+<H2><A NAME="connect">Unrestricted Connectivity</A></H2>
+
+Cell-to-cell connectivity in CNS models is completely unrestricted.  Any cell can be connected to any number of other cells in different layers, the same layer, or even to itself.  There are two types of connectivity.
+
+<UL>
+<LI><I>Regular patterned</I>.  Cells are assigned to regularly-spaced grid positions in a common coordinate space, and each cell infers its input cells with reference to these coordinates.  This scheme can be used to implement convolution as well as other regular connectivity patterns.
+<LI><I>Explicit synapses</I>.  Every cell has an explicit list of its input cells.  This takes a lot more memory, and models run more slowly.
+</UL>
+
+A CNS model can use either or both of these connectivity modes.<P>
+
+<HR>
+
+<H2><A NAME="ffiter">Feedforward or Iterative Execution</A></H2>
+
+Some cortical models, such as the <A HREF="http://web.mit.edu/serre/www/publications/SerreOlivaPoggioPNAS07.pdf">CBCL object recognition model</A>, are <I>feedforward</I>.  Cells compute their values based on input from hierarchically lower layers; they do not maintain internal state variables that evolve over time.  Trained <A HREF="http://yann.lecun.com/exdb/lenet/index.html">convolutional networks</A> operate in a similar manner, but during training there is an additional top-down pass.<P>
+
+CNS is also capable of supporting dynamic models in which cells have states that change over time.  One such example is a network of Hodgkin-Huxley neurons, in which each cell maintains its own membrane potential, the current state of its sodium and potassium channels, etc.  Models like these are iterated over some number of time steps, with each neuron getting a chance to update its state variables once per time step.<P>
+
+<HR>
+
+<H2><A NAME="working">Working with CNS</A></H2>
+
+CNS development occurs in two stages:
+
+<OL>
+<LI>Define layer/cell types.
+<LI>Build and run specific network models made up of those types of cells.
+</OL>
+
+A collection of related cell types is called a <I>package</I>.  You can develop your own packages from scratch, or use (and possibly modify) existing packages.  Packages currently exist for CBCL-type feedforward models, convolutional networks, and Hodgkin-Huxley spiking simulations.  The core CNS download contains a simple demo package that downscales an image and computes gabor filter responses.<P>
+
+All the cell types used in any CNS network model must be defined in a single package.
+
+<H3><A NAME="package">Developing Packages of Cell Types</A></H3>
+
+Each package is stored in a separate directory, and each cell type is defined by two files in that directory.
+
+<OL>
+<LI><I>Layer/cell attributes</I>, defined in a MATLAB ".m" file.  These include:<P>
+<UL>
+<LI>Names of <I>fields</I> (constants or variables) that are maintained per layer, per cell, or per synapse.
+<LI>Data types of those fields (single-precision floating point or integer).
+<LI>Whether fields are private or public (readable by other cells).
+<LI>Number of dimensions a cell layer of this type will have.
+</UL><P>
+<LI>A <I>compute kernel</I>, written in C++ and saved in a ".h" file.  Kernels are much easier to write using CNS than they are using the CUDA API directly.  This is mainly because for each field you specify (above), CNS automatically provides a named macro that lets you read and write that field.  You do not need to worry about how and where things are stored in GPU memory.
+</OL>
+
+Just like classes in object-oriented programming languages, a cell type can be a subtype of a parent type.  A subtype inherits the properties and fields of its parent type.<P>
+
+A package directory also contains one additional ".m" file which contains some non-type-specific definitions.  Once written and compiled, a package can be used to instantiate any number of CNS models.
+
+<H3><A NAME="model">Building and Running Network Models</A></H3>
+
+Once you have created (or chosen) a package of cell types, the process of building a network model and running it is done entirely in MATLAB.
+
+<OL>
+<LI>Define the network structure (in a MATLAB struct).  This includes the following information:<P>
+<UL>
+<LI>Name of the package you are using.
+<LI>Number of layers and the cell type of each.
+<LI>Size (number of cells along each dimension) of each layer.
+<LI>Cell-to-cell connections: either regular grid connectivity or explicitly enumerated synapses per cell.
+<LI>Values of constants and start values of variables.
+</UL><P>
+<LI>Run the model.  This generally consists of:<P>
+<UL>
+<LI>Initializing the above-defined model in GPU memory.
+<LI>Executing for some number of steps, possibly setting inputs and retrieving outputs between steps.
+<LI>Deallocating the model, releasing GPU resources.
+</UL>
+</OL>
+
+Note that if a GPU is not available, CNS can also run your model on the CPU.  This is sometimes also desirable for debugging.<P>
+
+<HR>
+
+<H2><A NAME="gpu">GPU Details CNS Handles For You</A></H2>
+
+The following is a partial list of the things CNS handles for you behind the scenes.  If some of these terms don't mean anything to you, well, that's one of the benefits of using CNS.
+
+<UL>
+<LI>Memory management:<P>
+<UL>
+<LI>Class of memory (global, texture, constant, shared, ....)
+<LI>Host-GPU transfers.
+<LI>Alignment and addressing.
+<LI>Dimension conversion (N-D to 2-D).
+<LI>Texture packing.
+</UL><P>
+<LI>Thread management.<P>
+<LI>The GPU programming API.
+</UL>
+
+</BODY>
+</HTML>

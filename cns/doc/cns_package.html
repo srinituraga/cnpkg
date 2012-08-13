@@ -1,0 +1,34 @@
+<HTML>
+<HEAD>
+<TITLE>cns_package</TITLE>
+</HEAD>
+<BODY>
+
+<H1><CODE>cns_package</CODE></H1>
+
+Calls a <A HREF="package.html#method">MATLAB method</A> defined at the package level.
+
+<H2>Syntax</H2>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+[out1, out2, ...] = cns_package(method, package, arg1, arg2, ...)
+[out1, out2, ...] = cns_package(method, m      , arg1, arg2, ...)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>package</CODE></DT><DD>
+The package name.  If this variant is used, the method will receive an empty <A HREF="model.html#build">model structure</A>.
+</DD><P>
+<DT><CODE>m</CODE></DT><DD>
+A <A HREF="model.html#build">model structure</A>.
+</DD><P>
+<DT><CODE>arg1, arg2, ...</CODE></DT><DD>
+Any additional inputs.  Depends on the particular method.
+</DD><P>
+<DT><CODE>out1, out2, ...</CODE></DT><DD>
+Any outputs.  Depends on the particular method.
+</DD>
+</DL>
+
+</BODY>
+</HTML>

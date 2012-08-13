@@ -1,0 +1,99 @@
+<HTML>
+<HEAD>
+<TITLE>CNS: History</TITLE>
+<STYLE>
+BODY {
+    counter-reset: count1 6;
+}
+.tol1 {
+    counter-reset: item 6;
+}
+</STYLE>
+<LINK REL="stylesheet" TYPE="text/css" HREF="style.css"/>
+</HEAD>
+<BODY>
+
+<TABLE><TR>
+<TD><A HREF="http://cbcl.mit.edu/jmutch/cns"><IMG BORDER="1" SRC="figs/cns.png"></A></TD><TD VALIGN="top">
+&nbsp;<BIG><BIG><BIG><B>CNS: Cortical Network Simulator</B></BIG></BIG></BIG><BR>
+&nbsp;<BIG><BIG><BIG><B>Programming Guide</B></BIG></BIG></BIG>
+</TD></TR></TABLE>
+
+<H1>Revision History</H1>
+
+<HR>
+
+<UL>
+<A HREF="index.html">Programming Guide</A>
+<OL CLASS="tol1">
+<LI CLASS="tli">Revision History
+</OL>
+</UL>
+
+<HR><P>
+
+<TABLE BORDER=1><TR>
+<TD><B>Rev#</B></TD>
+<TD><B>Date</B></TD>
+<TD><B>Changes</B></TD>
+</TR><TR>
+<TD><A NAME="r321">r321</A></TD>
+<TD>2010-03-15</TD>
+<TD><A HREF="cns.html#get"><CODE>cns('get')</CODE></A> and <A HREF="cns.html#set"><CODE>cns('set')</CODE></A> now support all <A HREF="package.html#field">field classes</A> except <A HREF="package.html#pfield">pointer fields</A>.</TD>
+</TR><TR>
+<TD><A NAME="r327">r327</A></TD>
+<TD>2010-03-20</TD>
+<TD><A HREF="package.html#field">Field classes</A> have been simplified:
+<UL>
+<LI>All <A HREF="package.html#afield">N-D array fields</A> are defined using the classes (ma/ga/la) whether they are cached or not.  Uncached is the default.  To define a cached N-D array, add the <CODE>'cache'</CODE> option.
+<LI>All <A HREF="package.html#cvfield">cell fields</A> are defined using the classes (cc/cv) whether they are public or not.  By default they are public; to define a private cell field, add the <CODE>'private'</CODE> option.
+<LI>Public <A HREF="package.html#cvfield">cell fields</A> may be cached or not.  Uncached is the default; to define a cached cell field, add the <CODE>'cache'</CODE> option.
+</UL></TD>
+</TR><TR>
+<TD><A NAME="r332">r332</A></TD>
+<TD>2010-03-24</TD>
+<TD><A HREF="package.html#cfield">Parameter</A> and <A HREF="package.html#afield">N-D array</A> fields can now be private.</TD>
+</TR><TR>
+<TD><A NAME="r334">r334</A></TD>
+<TD>2010-03-26</TD>
+<TD>The <CODE>help</CODE> option of <A HREF="cns_build.html"><CODE>cns_build</CODE></A> produces cleaner output.</TD>
+</TR><TR>
+<TD><A NAME="r337">r337</A></TD>
+<TD>2010-04-05</TD>
+<TD>Added <A HREF="cns_rename.html"><CODE>cns_rename</CODE></A>.</TD>
+</TR><TR>
+<TD><A NAME="r343">r343</A></TD>
+<TD>2010-07-11</TD>
+<TD><A HREF="package.html#temppre"><CODE>#PART</CODE></A> and <A HREF="package.html#temppre"><CODE>#INCLUDEPART</CODE></A> can be used recursively.</TD>
+</TR><TR>
+<TD><A NAME="r353">r353</A></TD>
+<TD>2010-08-04</TD>
+<TD>Added <A HREF="cns.html#async">multi-GPU and asynchronous support</A> (Linux or Mac only).</TD>
+</TR><TR>
+<TD><A NAME="r386">r386</A></TD>
+<TD>2010-11-13</TD>
+<TD>Added <A HREF="package.html#blocksize"><CODE>#BLOCKSIZE</CODE></A> and <A HREF="package.html#null"><CODE>#NULL</CODE></A> preprocessor directives.</TD>
+</TR><TR>
+<TD><A NAME="r387">r387</A></TD>
+<TD>2010-11-13</TD>
+<TD>Removed <CODE>PHASE_NO</CODE> macro.</TD>
+</TR><TR>
+<TD><A NAME="r388">r388</A></TD>
+<TD>2010-11-14</TD>
+<TD><A HREF="package.html#locarray">Fast local array variables</A> are now defined using preprocessor directives.</TD>
+</TR><TR>
+<TD><A NAME="r403">r403</A></TD>
+<TD>2011-01-28</TD>
+<TD><CODE>GET_<I>type</I>_<I>dim</I>_RF_...</CODE> macros renamed to <A HREF="package.html#find"><CODE>FIND_<I>type</I>_<I>dim</I>_...</CODE></A>.  Old names still work for now.</TD>
+</TR><TR>
+<TD><A NAME="r409">r409</A></TD>
+<TD>2011-02-11</TD>
+<TD><A HREF="package.html#dsplit">Split dimensions</A> are no longer visible to kernels.</TD>
+</TR><TR>
+<TD><A NAME="r416">r416</A></TD>
+<TD>2011-02-17</TD>
+<TD>Cell types are now defined using <A HREF="package.html#mdef"><CODE>classdef</CODE></A>.</TD>
+</TR></TABLE>
+
+</BODY>
+</HTML>

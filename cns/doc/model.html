@@ -1,0 +1,406 @@
+<HTML>
+<HEAD>
+<TITLE>CNS: Models</TITLE>
+<STYLE>
+BODY {
+    counter-reset: count1 3;
+}
+.tol1 {
+    counter-reset: item 3;
+}
+</STYLE>
+<LINK REL="stylesheet" TYPE="text/css" HREF="style.css"/>
+</HEAD>
+<BODY>
+
+<TABLE><TR>
+<TD><A HREF="http://cbcl.mit.edu/jmutch/cns"><IMG BORDER="1" SRC="figs/cns.png"></A></TD><TD VALIGN="top">
+&nbsp;<BIG><BIG><BIG><B>CNS: Cortical Network Simulator</B></BIG></BIG></BIG><BR>
+&nbsp;<BIG><BIG><BIG><B>Programming Guide</B></BIG></BIG></BIG>
+</TD></TR></TABLE>
+
+<H1>Building and Running Network Models</H1>
+
+<HR><P>
+
+<B><I>For a brief overview of this process, click <A HREF="overview.html#model">here</A>.</I></B><P>
+
+<HR>
+
+<UL>
+<A HREF="index.html">Programming Guide</A>
+<OL CLASS="tol1">
+<LI CLASS="tli">Building and Running Network Models
+<OL CLASS="tol">
+<LI CLASS="tli"><A HREF="#build">Building a Model</A>
+<OL CLASS="tol">
+<LI CLASS="tli"><A HREF="#choose">Choosing a Package</A>
+<LI CLASS="tli"><A HREF="#method">Calling Package Methods</A>
+<LI CLASS="tli"><A HREF="#modinfo">Model-Level Information</A>
+<LI CLASS="tli"><A HREF="#layerinfo">Layer Information</A>
+<OL CLASS="tol">
+<LI CLASS="tli"><A HREF="#basic">Basic Layer Properties</A>
+<LI CLASS="tli"><A HREF="#common">Common Coordinate Mapping</A>
+<LI CLASS="tli"><A HREF="#exsyn">Explicit Synapses</A>
+<LI CLASS="tli"><A HREF="#group">Group Membership</A>
+<LI CLASS="tli"><A HREF="#field">Fields</A>
+<LI CLASS="tli"><A HREF="#execorder">Execution Order</A>
+</OL>
+<LI CLASS="tli"><A HREF="#initial">Initial Values of Fields</A>
+<LI CLASS="tli"><A HREF="#review">Reviewing the Model Structure</A>
+</OL>
+<LI CLASS="tli"><A HREF="#run">Running a Model</A>
+</OL>
+</OL>
+</UL>
+
+<HR>
+
+<H2><A NAME="build">Building a Model</A></H2>
+
+A CNS network model is created by writing a MATLAB script that sets up a single MATLAB struct, for which we usually use the variable <CODE>"m"</CODE>.  The model structure identifies the package and describes the number, types, and sizes of layers as well as the connectivity between cells.  It must also provide an initial value for all <A HREF="package.html#field">fields</A> that do not have default values.<P>
+
+See the script <CODE>demopkg_run</CODE> in the demo package for an example of some code that sets up a simple model structure.  Here is some of that structure, which will be explained in the sections to follow.
+
+<A NAME="demomod"></A><BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+m =
+
+    package: 'demopkg'
+     layers: {[1x1 struct]  [1x1 struct]  [1x1 struct]}
+
+m.layers{1} =
+
+       type: 'input'
+         pz: 0
+       size: {[1]  [256]  [256]}
+    y_start: 0.0020
+    y_space: 0.0039
+    x_start: 0.0020
+    x_space: 0.0039
+
+m.layers{2} =
+
+       type: 'scale'
+         pz: 1
+       size: {[1]  [128]  [128]}
+    y_start: 0.0039
+    y_space: 0.0078
+    x_start: 0.0039
+    x_space: 0.0078
+
+m.layers{3} =
+
+       type: 'filter'
+         pz: 2
+    rfCount: 11
+       size: {[4]  [118]  [118]}
+    y_start: 0.0430
+    y_space: 0.0078
+    x_start: 0.0430
+    x_space: 0.0078
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+
+<H3><A NAME="choose">Choosing a Package</A></H3>
+
+Before anything else, you need to identify which <A HREF="package.html">package</A> of cell types this model uses.  This is done as follows:
+<BLOCKQUOTE><PRE>
+m.package = <I>name</I>;
+</PRE></BLOCKQUOTE>
+For example:
+<BLOCKQUOTE><PRE>
+m.package = 'demopkg';
+</PRE></BLOCKQUOTE>
+
+<H3><A NAME="method">Calling Package Methods</A></H3>
+
+The remainder of this section describes how to set up a model structure from scratch; however, the package you have <A HREF="#choose">chosen</A> may contain some <A HREF="package.html#method">methods</A> to help you do this.
+
+<UL>
+<LI>The package may have an <CODE>init</CODE> method, which gets called automatically by CNS to fill in the values of some fields for you.<P>
+<LI>The package may have some additional methods which you can call using the functions <A HREF="cns_package.html"><CODE>cns_package</CODE></A> (for model-level methods) and <A HREF="cns_type.html"><CODE>cns_type</CODE></A> (for layer/group level methods).
+</UL>
+
+You should check the package to see if any such methods are available.
+
+<H3><A NAME="modinfo">Model-Level Information</A></H3>
+
+In addition to the <A HREF="#choose">choice of package</A>, you must provide an <A HREF="#initial">initial value</A> for all <A HREF="package.html#field">fields</A> having <I>model</I> scope that do not have default values.  This is done as follows:
+<BLOCKQUOTE><PRE>
+m.<I>field</I> = <I>value</I>;
+</PRE></BLOCKQUOTE>
+</UL>
+
+Click <A HREF="#initial">here</A> for details on setting values for the different classes of fields.
+
+<H3><A NAME="layerinfo">Layer Information</A></H3>
+
+Most of the work in setting up a network model is in defining the various layers of cells that make up the network.  As shown <A HREF="#demomod">above</A>, each layer is defined by a struct in the cell array <CODE>m.layers</CODE>.  The following sections describe the various elements of a layer definition and how to set them up.
+
+<H4><A NAME="basic">Basic Layer Properties</A></H4>
+
+<TABLE BORDER="1">
+<TR><TD><B>Property</B></TD><TD><B>Usage</B></TD></TR>
+<TR><TD><CODE>name</CODE></TD><TD>
+Optional.  Provides the layer with a name.  This can be useful when models have lots of layers; the <A HREF="cns_layerno.html">cns_layerno</A> function can be used to find the number of a named layer.  If given, must be unique.<P>
+Example:
+<BLOCKQUOTE><PRE>
+m.layers{1}.name = 'image';
+</PRE></BLOCKQUOTE>
+</TD></TR>
+<TR><TD><CODE>type</CODE></TD><TD>
+Required.  Tells CNS the cell type of this layer.  Must be a <A HREF="package.html#prop">non-abstract</A> type defined in the <A HREF="#modinfo">selected package</A>.<P>
+Example:
+<BLOCKQUOTE><PRE>
+m.layers{1}.type = 'input';
+</PRE></BLOCKQUOTE>
+</TD></TR>
+<TR><TD><CODE>size</CODE></TD><TD>
+Required.  Tells CNS how many cells are in the layer along each dimension.  The dimensionality is <A HREF="package.html#dims">determined</A> by the cell type.<P>
+Example:
+<BLOCKQUOTE><PRE>
+m.layers{1}.size = {500 100 100};
+</PRE></BLOCKQUOTE>
+<B><I>Note 1: if the cell type maps some dimensions to a <A HREF="#common">common coordinate space</A>, the sizes of those dimensions will probably be determined by that process.</I></B><P>
+Note 2: CNS issues performance warnings if your layer size will lead to inefficient processing; see performance note <A HREF="package.html#dims">here</A>.  To turn off these warnings, you can set:
+<BLOCKQUOTE><PRE>
+m.quiet = true;
+</PRE></BLOCKQUOTE>
+</TD></TR>
+</TABLE>
+
+<H4><A NAME="common">Common Coordinate Mapping</A></H4>
+
+If some of a cell type's dimensions are mapped to a <A HREF="package.html#common">common coordinate space</A>, you need to establish that mapping for each layer you define.  This is done by calling the <A HREF="cns_mapdim.html"><CODE>cns_mapdim</CODE></A> function for each mapped dimension.  This sets:
+
+<UL>
+<LI>The size of that dimension.
+<LI>The common coordinate grid along that dimension, encoded by the parameter fields <CODE><I>dim</I>_start</CODE> and <CODE><I>dim</I>_space</CODE>.  (You can see examples of these <A HREF="#demomod">above</A>.)
+</UL>
+
+<A HREF="cns_mapdim.html"><CODE>cns_mapdim</CODE></A> has a number of different options.  The following code sets up two layers of the demo model <A HREF="#demomod">above</A>.  Note:
+
+<UL>
+<LI>Layer 2 is given the fixed size of {1 128 128} (the 128 comes from scaling 256 down by a factor of 2).  Common grid coordinates are set for dimensions y and x by placing 128 regular grid points to fill the range [0, 1].
+<LI>The first dimension of layer 3 is fixed to size 4, but the sizes of the y and x dimensions are derived from the fact that layer 3 is generated by moving an 11x11 filter across layer 2 in steps of 1.  The y and x grid coordinates are placed at the center of each valid filter position.
+</UL>
+
+<BLOCKQUOTE><TABLE BORDER="1"><TR><TD><PRE>
+m.layers{2}.size{1} = 1;
+m = cns_mapdim(m, 2, 'y', 'scaledpixels', 256, 2);
+m = cns_mapdim(m, 2, 'x', 'scaledpixels', 256, 2);
+
+m.layers{3}.size{1} = 4;
+m = cns_mapdim(m, 3, 'y', 'int', 2, 11, 1);
+m = cns_mapdim(m, 3, 'x', 'int', 2, 11, 1);
+</PRE></TD></TR></TABLE></BLOCKQUOTE>
+
+Once common coordinates have been set up, there are several useful functions you can call from MATLAB:
+<UL>
+<LI><A HREF="cns_center.html"><CODE>cns_center</CODE></A> - find the position of a cell in common coordinates.
+<LI><A HREF="cns_getrfnear.html"><CODE>cns_getrfnear</CODE></A>, <A HREF="cns_getrfnearat.html"><CODE>cns_getrfnearat</CODE></A> - find the nearest <CODE>n</CODE> cells to a given cell or position.
+<LI><A HREF="cns_getrfdist.html"><CODE>cns_getrfdist</CODE></A>, <A HREF="cns_getrfdistat.html"><CODE>cns_getrfdistat</CODE></A> - find cells within radius <CODE>r</CODE> of a given cell or position.
+</UL>
+
+<H4><A NAME="exsyn">Explicit Synapses</A></H4>
+
+Explicit synapses (if your cell type has the <A HREF="package.html#prop"><CODE>synType</CODE></A> property) may be enumerated for all the cells in a layer using the following three properties.<P>
+
+<TABLE BORDER="1">
+<TR><TD><B>Property</B></TD><TD><B>Usage</B></TD></TR>
+<TR><TD><CODE>synapseZs</CODE></TD><TD>
+The layer number of the presynaptic cell for each synapse, for each cell in this layer.  This is a numeric array of size <CODE>[ns n1 n2 ...]</CODE>, where:
+<UL>
+<LI><CODE>ns</CODE> = the maximum number of synapses for a cell in this layer
+<LI><CODE>n1</CODE> = the size of this layer along dimension 1
+<LI><CODE>n2</CODE> = the size of this layer along dimension 2
+<LI>...
+</UL>
+For example, if layer <CODE>z</CODE> is a 3-D layer of size [8 64 64], with at most 50 synapses per cell, we would have:
+<BLOCKQUOTE><PRE>
+size(m.layers{z}.synapseZs) = [50 8 64 64]
+</PRE></BLOCKQUOTE>
+The <CODE>synapseZs</CODE> values for cell (1, 1, 1) will be in <CODE>synapseZs(:, 1, 1, 1)</CODE>.<P>
+If some cells have less than <CODE>ns</CODE> synapses, the trailing <CODE>synapseZs</CODE> values for those cells must be zero.  For example, if cell (1, 1, 1) has only 42 synapses, then <CODE>synapseZs(43:50, 1, 1, 1)</CODE> must all be 0.<P>
+If all synapses for this layer originate in the same presynaptic layer, you can set <CODE>synapseZs</CODE> to a scalar.
+</TD></TR>
+<TR><TD><CODE>synapseIs</CODE></TD><TD>
+This holds the <A HREF="http://www.mathworks.com/access/helpdesk/help/techdoc/math/f1-85462.html#f1-85511">linear index</A> of each presynaptic cell within its own layer.  For example, if we want to point to presynaptic cell (5, 2, 4) which sits in a layer of size [10 20 30], that cell's linear index within its layer can be computed as:
+<BLOCKQUOTE><PRE>
+<A HREF="http://www.mathworks.com/access/helpdesk/help/techdoc/ref/sub2ind.html">sub2ind</A>([10 20 30], 5, 2, 4) = 615
+</PRE></BLOCKQUOTE>
+(Note: <A HREF="cns_iconv.html"><CODE>cns_iconv</CODE></A> provides the same functionality and is more convenient to use with CNS model structures.)<P>
+Like <CODE>synapseZs</CODE> above, this is a numeric array of size <CODE>[ns n1 n2 ...]</CODE>.  Also like <CODE>synapseZs</CODE>, if some cells have less than <CODE>ns</CODE> synapses, the trailing <CODE>synapseIs</CODE> values for those cells must be zero.
+</TD></TR>
+<TR><TD><CODE>synapseTs</CODE></TD><TD>
+If desired, you can attach a positive integer to each synapse, which is a good way to differentiate types of synapses.  If present, <CODE>synapseTs</CODE> must be the same size as <CODE>synapseIs</CODE> and have zeros exactly where <CODE>synapseIs</CODE> has zeros.  If all synapses have the same type, <CODE>synapseTs</CODE> can also be a scalar.
+</TD></TR>
+</TABLE><P>
+
+Once explicit synapses have been enumerated for all layers, the <A HREF="cns_trace.html"><CODE>cns_trace</CODE></A> function is a useful tool for tracing connectivity through the network.
+
+<H4><A NAME="group">Group Membership</A></H4>
+
+It is sometimes convenient to have multiple layers share some of the same data (parameters, feature dictionaries, etc.)  One way to do this would be to have the package define these fields at the model level, but that may be too broad.  CNS has a "group" option whereby multiple layers <I>of the same type</I> can be declared to be a group.  They will then share a single copy of all fields which the package defines as:
+
+<UL>
+<LI>group <A HREF="package.html#cfield">parameter</A> (gp) fields
+<LI>group <A HREF="package.html#pfield">pointer</A> (gz) fields
+<LI>group <A HREF="package.html#afield">N-D array</A> (ga) fields
+</UL>
+
+For example, when building a network model, you could declare layers 1 and 2 to be part of the same group (group 1) like this:
+<BLOCKQUOTE><PRE>
+m.layers{1}.<FONT COLOR="red">groupNo</FONT> = 1;
+m.layers{2}.<FONT COLOR="red">groupNo</FONT> = 1;
+</PRE></BLOCKQUOTE>
+
+CNS would then expect to find the values of any "group" fields (fields of the classes listed above) in:
+<BLOCKQUOTE><PRE>
+m.<FONT COLOR="red">groups</FONT>{1}
+</PRE></BLOCKQUOTE>
+
+If a given layer <CODE>z</CODE> is not assigned to any group, CNS will look for any "group" fields in:
+<BLOCKQUOTE><PRE>
+m.layers{z}
+</PRE></BLOCKQUOTE>
+
+If groups are used, they must be contiguously numbered.  For example, if group 5 exists, then groups 1-4 must also exist.<P>
+
+Groups may have names, e.g.:
+<BLOCKQUOTE><PRE>
+m.groups{1}.name = 'c1';
+</PRE></BLOCKQUOTE>
+
+Named groups can be found in a large model using the function <A HREF="cns_groupno.html"><CODE>cns_groupno</CODE></A>.
+
+<H4><A NAME="field">Fields</A></H4>
+
+You must provide an <A HREF="#initial">initial value</A> for all <A HREF="package.html#field">fields</A> having <I>layer</I> (or <I>group</I>) scope that do not have default values.<P>
+
+This is done for layer <CODE>z</CODE> as follows:
+<BLOCKQUOTE><PRE>
+m.layers{z}.<I>field</I> = <I>value</I>;
+</PRE></BLOCKQUOTE>
+<I>Exception:</I> if layer <CODE>z</CODE> <A HREF="#group">belongs to group</A> <CODE>g</CODE>, fields having <I>group</I> scope are set as follows:
+<BLOCKQUOTE><PRE>
+m.groups{g}.<I>field</I> = <I>value</I>;
+</PRE></BLOCKQUOTE>
+
+Click <A HREF="#initial">here</A> for details on setting values for the different classes of fields.
+
+<H4><A NAME="execorder">Execution Order</A></H4>
+
+By default, during a single network iteration:
+<OL>
+<LI>All layers are computed in parallel.  While this is not strictly true, you can pretend it is.  The order of processing is both unspecified and irrelevant.  A double-buffering technique is used so that all computations performed in iteration <CODE>t</CODE> use inputs from iteration <CODE>t-1</CODE>.
+<LI>Every cell (except those without a kernel) gets its compute kernel called once.
+</OL>
+
+The above make sense for dynamic, time-based simulations such as models that use spiking neurons.  But they don't make sense for other kinds of models.  For example:
+<UL>
+<LI>(1) would be suboptimal for a purely feedforward model, which is most efficiently computed stepwise, from bottom to top.
+<LI>(2) doesn't hold when training a <A HREF="http://yann.lecun.com/exdb/lenet/index.html">convolutional network</A>, where a single network iteration consists of a forward pass, a backward pass, and a weight update.
+</UL>
+
+CNS's solution to this is to assign each layer to one or more <I>step numbers</I>.  For example, the following would cause CNS to break a full network iteration into three steps, consisting of layers 1, 2, and 3, respectively.  The results of step 1 will be available to the cells being computed in step 2, etc.
+<BLOCKQUOTE><PRE>
+m.layers{1}.stepNo = 1;
+m.layers{2}.stepNo = 2;
+m.layers{3}.stepNo = 3;
+</PRE></BLOCKQUOTE>
+
+More than one layer can be computed in a single step.  (Indeed, in the default case, where no <CODE>stepNos</CODE> are specified, all layers get assigned to step 1.)<P>
+
+The function <A HREF="cns_setstepnos.html"><CODE>cns_setstepnos</CODE></A> can automatically assign step numbers for some common cases.<P>
+
+A layer can also be computed more than once in a single network iteration.  Here, layer <CODE>z</CODE> will get computed twice, once in step 3 and once in step 6.
+<BLOCKQUOTE><PRE>
+m.layers{z}.stepNo = [3 6];
+</PRE></BLOCKQUOTE>
+
+A kernel can take a different action based on whether it's the layer's first <CODE>stepNo</CODE>, second, etc.  See the <A HREF="package.html#genmac"><CODE>PHASE_NO</CODE></A> macro.<P>
+
+In networks that are computed in steps, it is often the case that the cells within a single step are independent of each other.  They depend on cells in previous steps, but not on each other.  If this is true for all steps, then the double-buffering referred to above is unnecessary, and you can get a performance gain by turning it off.  This is done with the setting:
+<BLOCKQUOTE><PRE>
+m.independent = true;
+</PRE></BLOCKQUOTE>
+
+<H3><A NAME="initial">Initial Values of Fields</A></H3>
+
+You must provide a value (for variables, an initial value) for all fields that do not have default values.  This is done by setting a value in the model structure, in one of these places (depending on the scope):
+
+<BLOCKQUOTE><PRE>
+m.<I>field</I> = <I>value</I>;
+m.layers{z}.<I>field</I> = <I>value</I>;
+m.groups{g}.<I>field</I> = <I>value</I>;
+</PRE></BLOCKQUOTE>
+
+The following table shows where each class/scope of field is initialized, and the format required.  Note:
+
+<UL>
+<LI>n1 = the size of a layer along dimension 1
+<LI>n2 = the size of a layer along dimension 2
+<LI>...
+<LI>ns = the maximum number of synapses for a cell in a layer
+<LI>nv = the number of values in a multivalued field
+</UL>
+
+<TABLE BORDER="1"><TR>
+<TD><B>Field Class</B></TD>
+<TD><B>Scope</B></TD>
+<TD><B>Initialized in</B></TD>
+<TD><B>Format<BR>(Single-Valued)</B></TD>
+<TD><B>Format<BR>(Multivalued)</B></TD>
+</TR><TR>
+<TD ROWSPAN="3"><A HREF="package.html#cfield">parameter</A><BR><A HREF="package.html#pfield">pointer</A></TD>
+<TD>model</TD>
+<TD><CODE>m</CODE></TD>
+<TD ROWSPAN="3"><LI>scalar</TD>
+<TD ROWSPAN="3"><LI>vector</TD>
+</TR><TD>layer</TD><TD><CODE>m.layers{z}</CODE></TD>
+</TR><TD>group</TD><TD><CODE>m.groups{g}</CODE></TD>
+</TR><TR>
+<TD ROWSPAN="3"><A HREF="package.html#afield">N-D array</A></TD>
+<TD>model</TD>
+<TD><CODE>m</CODE></TD>
+<TD ROWSPAN="3"><LI>N-D array</TD>
+<TD ROWSPAN="3"><LI>cell array of N-D arrays</TD>
+</TR><TD>layer</TD><TD><CODE>m.layers{z}</CODE></TD>
+</TR><TD>group</TD><TD><CODE>m.groups{g}</CODE></TD>
+</TR><TR>
+<TD><A HREF="package.html#cvfield">cell field</A></TD>
+<TD>cell</TD>
+<TD><CODE>m.layers{z}</CODE></TD>
+<TD><LI>size [n1 n2 ...] array<LI>scalar</TD>
+<TD><LI>size [nv n1 n2 ...] array<LI>scalar<LI>empty</TD>
+</TR><TR>
+<TD><A HREF="package.html#sfield">synapse field</A></TD>
+<TD>synapse</TD>
+<TD><CODE>m.layers{z}</CODE></TD>
+<TD><LI>size [ns n1 n2 ...] array<LI>scalar</TD>
+<TD><LI>size [nv ns n1 n2 ...] array<LI>scalar<LI>empty</TD>
+</TR></TABLE><P>
+
+A few functions that might be useful here are:
+<UL>
+<LI><A HREF="cns_getconsts.html"><CODE>cns_getconsts</CODE></A> - returns the values of <A HREF="package.html#const">compile-time constants</A> defined by the package.
+<LI><A HREF="cns_intmin.html"><CODE>cns_intmin</CODE></A>, <A HREF="cns_intmax.html"><CODE>cns_intmax</CODE></A> - lower and upper bounds for an integer.
+<LI><A HREF="cns_fltmin.html"><CODE>cns_fltmin</CODE></A>, <A HREF="cns_fltmax.html"><CODE>cns_fltmax</CODE></A> - lower and upper bounds for a single-precision floating point number.
+</UL>
+
+<H3><A NAME="review">Reviewing the Model Structure</A></H3>
+
+Once you've assembled your model structure, you can try <A HREF="cns.html#init">initializing it</A> on the GPU.  CNS will tell you if anything is missing, wrongly formatted, etc.<P>
+
+You may be relying on CNS to fill in some default values for you.  If you want to check these, you can get a complete model structure with all the defaults filled in by calling <A HREF="cns_getdflts.html">cns_getdflts</A>.<P>
+
+You are also free to use the model structure to store additional information that CNS doesn't know about.  This is fine, as long as you don't overwrite anything CNS needs.  If you've forgotten what's yours and what's CNS's, the function <A HREF="cns_getknownfields.html">cns_getknownfields</A> will tell you.
+
+<HR>
+
+<H2><A NAME="run">Running a Model</A></H2>
+
+Once you have <A HREF="#build">built</A> your model structure, you can initialize it on the GPU, execute it, set inputs and retrieve outputs between iterations/steps, etc.  All of this is done using the <A HREF="cns.html"><CODE>cns</CODE></A> function.
+
+</BODY>
+</HTML>

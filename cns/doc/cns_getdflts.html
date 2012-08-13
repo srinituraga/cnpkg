@@ -1,0 +1,36 @@
+<HTML>
+<HEAD>
+<TITLE>cns_getdflts</TITLE>
+</HEAD>
+<BODY>
+
+<H1><CODE>cns_getdflts</CODE></H1>
+
+Fills in any default values for fields not explicitly given values in a <A HREF="model.html#build">model structure</A>.<P>
+
+Note: internally, <A HREF="cns.html#init"><CODE>cns('init')</CODE></A> does this automatically, so you do not need to explicitly call this function yourself.  It is provided in the event you want to write MATLAB code that accesses these values -- or if you just want to inspect them.
+
+<H2>Syntax</H2>
+
+<TABLE BORDER="1"><TR><TD><PRE>
+m = cns_getdflts(m)
+m = cns_getdflts(m, n)
+</PRE></TD></TR></TABLE>
+
+<DL>
+<DT><CODE>m</CODE></DT><DD>
+A <A HREF="model.html#build">model structure</A>.
+</DD><P>
+<DT><CODE>n</CODE></DT><DD>
+Indicates what part of the model structure to fill in defaults for.
+<UL>
+<LI>A positive number indicates a layer.
+<LI>A negative number indicates a <A HREF="model.html#group">group</A>.
+<LI>Zero indicates model scope.
+<LI>If <CODE>n</CODE> is omitted, fill in defaults for the entire structure (model scope plus all layers and groups).
+</UL>
+</DD>
+</DL>
+
+</BODY>
+</HTML>

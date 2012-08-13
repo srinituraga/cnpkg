@@ -1,0 +1,12 @@
+#! /bin/csh -f
+
+set CUDA = 1
+
+if (`uname -m` == x86_64) then
+    # linux64
+    set CUDA_LINK_LIB = (-L/usr/local/cuda/lib64 -lcudart)
+else
+    # linux32, mac32, mac64
+    set CUDA_LINK_LIB = (-L/usr/local/cuda/lib -lcudart)
+endif
+
